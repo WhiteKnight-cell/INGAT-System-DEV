@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, app
 from extensions import db, login_manager
 from dotenv import load_dotenv
 import os
@@ -26,6 +26,9 @@ def create_app():
 
     from routes.admin_routes import admin_bp
     app.register_blueprint(admin_bp)
+
+    from routes.user_routes import user_bp
+    app.register_blueprint(user_bp)
 
     with app.app_context():
         import models
