@@ -1,0 +1,69 @@
+from extensions import db
+from flask_login import UserMixin
+from datetime import datetime
+
+
+class User(db.Model, UserMixin):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    full_name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    contact_number = db.Column(db.String(11), nullable=False)
+    barangay = db.Column(db.String(100), nullable=False)
+    municipality = db.Column(db.String(100), nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
+    status = db.Column(db.String(20), default='active')
+    email_notif = db.Column(db.Boolean, default=True)
+    inapp_notif = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    complaints = db.relationship('Complaint', backref='complainant', lazy=True)
+
+
+class AdminUser(db.Model, UserMixin):
+    __tablename__ = 'admin_users'
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Agency(db.Model):
+    __tablename__ = 'agencies'
+    id = db.Column(db.Integer, primary_key=True)
+    agency_name = db.Column(db.String(100), nullable=False)
+    contact_email = db.Column(db.String(120), nullable=False)
+    contact_number = db.Column(db.String(11), nullable=False)
+    violation_types = db.Column(db.String(255), nullable=False)
+    status = db.Column(db.String(20), default='active')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    complaints = db.relationship('Complaint', backref='agency', lazy=True)
+
+
+class Complaint(db.Model):
+    __tablename__ = 'complaints'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    agency_id = db.Column(db.Integer, db.ForeignKey('agencies.id'), nullable=True)
+    violation_type = db.Column(db.String(100), nullable=False)
+    street_address = db.Column(db.String(255), nullable=False)
+    barangay = db.Column(db.String(100), nullable=False)
+    municipality = db.Column(db.String(100), nullable=False)
+    date_incident = db.Column(db.Date, nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    photo_path = db.Column(db.String(255), nullable=True)
+    generated_letter = db.Column(db.Text, nullable=True)
+    letter_generated = db.Column(db.Boolean, default=False)
+    status = db.Column(db.String(50), default='Submitted')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status_history = db.relationship('StatusHistory', backref='complaint', lazy=True)
+
+
+class StatusHistory(db.Model):
+    __tablename__ = 'status_history'
+    id = db.Column(db.Integer, primary_key=True)
+    complaint_id = db.Column(db.Integer, db.ForeignKey('complaints.id'), nullable=False)
+    previous_status = db.Column(db.String(50), nullable=True)
+    new_status = db.Column(db.String(50), nullable=False)
+    remarks = db.Column(db.Text, nullable=True)
+    updated_by = db.Column(db.Integer, db.ForeignKey('admin_users.id'), nullable=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
