@@ -1,6 +1,7 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
+from itsdangerous import URLSafeTimedSerializer
 import re
 
 user_bp = Blueprint('user', __name__, url_prefix='/user')
@@ -111,3 +112,84 @@ def user_logout():
 @login_required
 def submit_complaint():
     return render_template('user/submit_complaint.html')
+
+def generate_reset_token(email):
+    s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    return s.dumps(email, salt='password-reset-salt')
+
+
+def verify_reset_token(token, expiration=3600):
+    s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    try:
+        email = s.loads(token, salt='password-reset-salt', max_age=expiration)
+    except Exception:
+        return None
+    return email
+
+
+@user_bp.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip()
+
+        if not email:
+            flash('Please enter your email address.', 'danger')
+            return render_template('user/forgot_password.html')
+
+        from models import User
+        user = User.query.filter_by(email=email).first()
+
+        if user:
+            token = generate_reset_token(email)
+            reset_url = url_for('user.reset_password', token=token, _external=True)
+            body = f"""
+            <h3>INGAT — Password Reset</h3>
+            <p>Hello {user.full_name},</p>
+            <p>Click the link below to reset your password:</p>
+            <a href="{reset_url}" style="background:#2D6A4F;color:white;padding:10px 20px;
+            border-radius:8px;text-decoration:none;">Reset Password</a>
+            <p>This link expires in <strong>1 hour</strong>.</p>
+            <p>If you did not request this, ignore this email.</p>
+            """
+            from utils import send_email
+            send_email(email, 'INGAT — Password Reset Request', body)
+
+        flash('If that email is registered, a reset link has been sent.', 'info')
+        return redirect(url_for('user.forgot_password'))
+
+    return render_template('user/forgot_password.html')
+
+
+@user_bp.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    email = verify_reset_token(token)
+    if not email:
+        flash('The reset link is invalid or has expired.', 'danger')
+        return redirect(url_for('user.forgot_password'))
+
+    if request.method == 'POST':
+        password = request.form.get('password', '').strip()
+        confirm_password = request.form.get('confirm_password', '').strip()
+
+        if not password or not confirm_password:
+            flash('All fields are required.', 'danger')
+            return render_template('user/reset_password.html', token=token)
+
+        if password != confirm_password:
+            flash('Passwords do not match.', 'danger')
+            return render_template('user/reset_password.html', token=token)
+
+        if len(password) < 8:
+            flash('Password must be at least 8 characters.', 'danger')
+            return render_template('user/reset_password.html', token=token)
+
+        from models import User
+        from extensions import db
+        user = User.query.filter_by(email=email).first()
+        if user:
+            user.password_hash = generate_password_hash(password)
+            db.session.commit()
+            flash('Password reset successfully! Please log in.', 'success')
+            return redirect(url_for('user.user_login'))
+
+    return render_template('user/reset_password.html', token=token)
