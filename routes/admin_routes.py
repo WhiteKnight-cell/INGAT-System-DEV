@@ -31,7 +31,19 @@ def admin_login():
 @admin_bp.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('admin/dashboard.html')
+    from models import Complaint
+    total = Complaint.query.count()
+    pending = Complaint.query.filter_by(status='Submitted').count()
+    forwarded = Complaint.query.filter_by(status='Forwarded to Agency').count()
+    resolved = Complaint.query.filter_by(status='Resolved').count()
+    recent_complaints = Complaint.query.order_by(
+        Complaint.created_at.desc()).limit(10).all()
+    return render_template('admin/dashboard.html',
+                           total=total,
+                           pending=pending,
+                           forwarded=forwarded,
+                           resolved=resolved,
+                           recent_complaints=recent_complaints)
 
 
 @admin_bp.route('/logout')
