@@ -108,23 +108,115 @@ def user_logout():
     return redirect(url_for('user.user_login'))
 
 
-@user_bp.route('/submit')
+@user_bp.route('/submit', methods=['GET', 'POST'])
 @login_required
 def submit_complaint():
+    if request.method == 'POST':
+        violation_type = request.form.get('violation_type', '').strip()
+        street_address = request.form.get('street_address', '').strip()
+        barangay = request.form.get('barangay', '').strip()
+        municipality = request.form.get('municipality', '').strip()
+        date_incident = request.form.get('date_incident', '').strip()
+        description = request.form.get('description', '').strip()
+        photo = request.files.get('photo')
+
+        # Validate fields
+        if not all([violation_type, street_address, barangay, municipality, date_incident, description]):
+            flash('All required fields must be filled.', 'danger')
+            return render_template('user/submit_complaint.html')
+
+        if len(description) < 20:
+            flash('Description must be at least 20 characters.', 'danger')
+            return render_template('user/submit_complaint.html')
+
+        # Validate violation type whitelist
+        allowed_types = ['Illegal Dumping', 'Air Pollution', 'Water Pollution', 'Illegal Logging', 'Others']
+        if violation_type not in allowed_types:
+            flash('Invalid violation type selected.', 'danger')
+            return render_template('user/submit_complaint.html')
+
+        # Validate date — no future dates
+        from datetime import date
+        try:
+            incident_date = date.fromisoformat(date_incident)
+            if incident_date > date.today():
+                flash('Date of incident cannot be a future date.', 'danger')
+                return render_template('user/submit_complaint.html')
+        except ValueError:
+            flash('Invalid date format.', 'danger')
+            return render_template('user/submit_complaint.html')
+
+        # Handle photo upload
+        photo_path = None
+        if photo and photo.filename != '':
+            import os
+            from werkzeug.utils import secure_filename
+            from PIL import Image
+
+            allowed_extensions = {'jpg', 'jpeg', 'png'}
+            ext = photo.filename.rsplit('.', 1)[-1].lower()
+            if ext not in allowed_extensions:
+                flash('Photo must be JPG or PNG only.', 'danger')
+                return render_template('user/submit_complaint.html')
+
+            photo.seek(0, 2)
+            file_size = photo.tell()
+            photo.seek(0)
+            if file_size > 5 * 1024 * 1024:
+                flash('Photo must not exceed 5MB.', 'danger')
+                return render_template('user/submit_complaint.html')
+
+            filename = secure_filename(photo.filename)
+            upload_folder = os.path.join('static', 'uploads')
+            os.makedirs(upload_folder, exist_ok=True)
+            photo_path = os.path.join(upload_folder, filename)
+            photo.save(photo_path)
+
+        # Auto-agency routing — ING009C
+        agency_map = {
+            'Illegal Dumping': 'LGU',
+            'Air Pollution': 'DENR',
+            'Water Pollution': 'LLDA',
+            'Illegal Logging': 'DENR',
+            'Others': 'LGU'
+        }
+        agency_name = agency_map.get(violation_type, 'LGU')
+
+        from models import Agency, Complaint
+        from extensions import db
+        from flask_login import current_user
+
+        agency = Agency.query.filter_by(agency_name=agency_name).first()
+        agency_id = agency.id if agency else None
+
+        # Save complaint
+        new_complaint = Complaint(
+            user_id=current_user.id,
+            agency_id=agency_id,
+            violation_type=violation_type,
+            street_address=street_address,
+            barangay=barangay,
+            municipality=municipality,
+            date_incident=incident_date,
+            description=description,
+            photo_path=photo_path,
+            status='Submitted'
+        )
+        db.session.add(new_complaint)
+        db.session.commit()
+
+        flash('Complaint submitted successfully!', 'success')
+        return redirect(url_for('user.complaint_submitted', complaint_id=new_complaint.id))
+
     return render_template('user/submit_complaint.html')
 
-def generate_reset_token(email):
-    s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
-    return s.dumps(email, salt='password-reset-salt')
 
-
-def verify_reset_token(token, expiration=3600):
-    s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
-    try:
-        email = s.loads(token, salt='password-reset-salt', max_age=expiration)
-    except Exception:
-        return None
-    return email
+@user_bp.route('/submitted/<int:complaint_id>')
+@login_required
+def complaint_submitted(complaint_id):
+    from models import Complaint
+    complaint = Complaint.query.get_or_404(complaint_id)
+    return render_template('user/complaint_submitted.html', complaint=complaint)
 
 
 @user_bp.route('/forgot-password', methods=['GET', 'POST'])
@@ -193,3 +285,8 @@ def reset_password(token):
             return redirect(url_for('user.user_login'))
 
     return render_template('user/reset_password.html', token=token)
+
+@user_bp.route('/my-reports')
+@login_required
+def my_reports():
+    return render_template('user/my_reports.html')
