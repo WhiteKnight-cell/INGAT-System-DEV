@@ -5,6 +5,10 @@ from datetime import datetime
 
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
+
+    def get_id(self):
+        return f'user-{self.id}'
+
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -21,6 +25,10 @@ class User(db.Model, UserMixin):
 
 class AdminUser(db.Model, UserMixin):
     __tablename__ = 'admin_users'
+
+    def get_id(self):
+        return f'admin-{self.id}'
+
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)

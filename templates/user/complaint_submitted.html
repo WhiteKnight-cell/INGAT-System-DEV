@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INGAT — Complaint Submitted</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background-color: #f0f4f0; font-family: 'Segoe UI', sans-serif; }
+        .navbar-ingat { background-color: #2D6A4F; }
+        .card { border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+        .btn-ingat {
+            background-color: #2D6A4F;
+            color: white; border: none;
+            border-radius: 8px; padding: 10px 20px;
+            font-weight: 600;
+        }
+        .btn-ingat:hover { background-color: #1f4f3a; color: white; }
+        .success-icon {
+            width: 72px; height: 72px;
+            background: #e8f4ee;
+            border-radius: 50%;
+            display: flex; align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+        }
+        .letter-preview {
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 16px;
+            max-height: 320px;
+            overflow-y: auto;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+        .letter-section-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #2D6A4F;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark navbar-ingat px-4 py-2">
+    <span class="navbar-brand fw-bold">🌿 INGAT</span>
+    <a href="{{ url_for('user.user_logout') }}"
+       class="btn btn-outline-light btn-sm">Logout</a>
+</nav>
+
+<div class="container py-4" style="max-width: 680px;">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} py-2 small">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card p-4 text-center mb-3">
+        <div class="success-icon">
+            <i class="bi bi-check-circle-fill text-success" style="font-size: 36px;"></i>
+        </div>
+        <h4 class="fw-bold mb-1">Complaint Submitted!</h4>
+        <p class="text-muted small mb-3">
+            Your complaint has been recorded and routed to the appropriate agency.
+        </p>
+
+        <div class="bg-light rounded p-3 text-start mb-3">
+            <div class="row small">
+                <div class="col-5 text-muted">Reference No.</div>
+                <div class="col-7 fw-semibold">#ING-{{ '%04d' % complaint.id }}</div>
+                <div class="col-5 text-muted">Violation Type</div>
+                <div class="col-7">{{ complaint.violation_type }}</div>
+                <div class="col-5 text-muted">Status</div>
+                <div class="col-7">
+                    <span class="badge bg-secondary">{{ complaint.status }}</span>
+                </div>
+                <div class="col-5 text-muted">Date Submitted</div>
+                <div class="col-7">{{ complaint.created_at.strftime('%B %d, %Y') }}</div>
+                {% if complaint.agency %}
+                <div class="col-5 text-muted">Routed Agency</div>
+                <div class="col-7">{{ complaint.agency.agency_name }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="d-grid gap-2">
+            <a href="{{ url_for('user.submit_complaint') }}"
+               class="btn btn-ingat">
+                <i class="bi bi-plus-circle"></i> Submit Another Complaint
+            </a>
+            <a href="{{ url_for('user.my_reports') }}"
+               class="btn btn-outline-secondary">
+                <i class="bi bi-list-ul"></i> View My Reports
+            </a>
+        </div>
+    </div>
+
+    {% if complaint.letter_generated and complaint.generated_letter %}
+    <div class="card p-4">
+        <div class="letter-section-title mb-2">
+            <i class="bi bi-file-earmark-text me-1"></i> AI-Generated Formal Complaint Letter
+        </div>
+        <p class="text-muted small mb-3">
+            Review your letter below. You may download it as PDF or DOCX to submit to the agency.
+        </p>
+        <div class="letter-preview mb-3">{{ complaint.generated_letter }}</div>
+        <div class="d-flex flex-wrap gap-2 justify-content-center">
+            <a href="{{ url_for('user.download_letter_pdf', complaint_id=complaint.id) }}"
+               class="btn btn-ingat btn-sm">
+                <i class="bi bi-file-pdf"></i> Download PDF
+            </a>
+            <a href="{{ url_for('user.download_letter_docx', complaint_id=complaint.id) }}"
+               class="btn btn-outline-success btn-sm">
+                <i class="bi bi-file-word"></i> Download DOCX
+            </a>
+        </div>
+    </div>
+    {% else %}
+    <div class="card p-4 text-center">
+        <i class="bi bi-exclamation-triangle text-warning" style="font-size: 28px;"></i>
+        <p class="fw-semibold mt-2 mb-1">Letter Not Generated</p>
+        <p class="text-muted small mb-0">
+            Your complaint was saved, but the AI letter could not be generated.
+            Please check that <code>GEMINI_API_KEY</code> is set in your <code>.env</code> file and try submitting again later.
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+</body>
+</html>
