@@ -1,10 +1,36 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
+from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import login_user, logout_user, login_required, current_user
-from itsdangerous import URLSafeTimedSerializer
+from flask_login import login_user, logout_user, current_user
 import re
 
+from routes.auth import member_required
+from utils import generate_reset_token, send_email, verify_reset_token
+
 user_bp = Blueprint('user', __name__, url_prefix='/user')
+
+ALLOWED_VIOLATION_TYPES = [
+    'Illegal Dumping',
+    'Air Pollution',
+    'Water Pollution',
+    'Illegal Logging',
+    'Others',
+]
+
+
+def _complaint_form_from_request():
+    """Preserve submitted values when re-rendering the form after validation errors."""
+    return {
+        'violation_type': request.form.get('violation_type', '').strip(),
+        'street_address': request.form.get('street_address', '').strip(),
+        'barangay': request.form.get('barangay', '').strip(),
+        'municipality': request.form.get('municipality', '').strip(),
+        'date_incident': request.form.get('date_incident', '').strip(),
+        'description': request.form.get('description', ''),
+    }
+
+
+def _render_submit_form(form=None):
+    return render_template('user/submit_complaint.html', form=form or {})
 
 
 @user_bp.route('/register', methods=['GET', 'POST'])
@@ -102,77 +128,97 @@ def user_login():
 
 
 @user_bp.route('/logout')
-@login_required
+@member_required
 def user_logout():
     logout_user()
     return redirect(url_for('user.user_login'))
 
 
 @user_bp.route('/submit', methods=['GET', 'POST'])
-@login_required
+@member_required
 def submit_complaint():
     if request.method == 'POST':
-        violation_type = request.form.get('violation_type', '').strip()
-        street_address = request.form.get('street_address', '').strip()
-        barangay = request.form.get('barangay', '').strip()
-        municipality = request.form.get('municipality', '').strip()
-        date_incident = request.form.get('date_incident', '').strip()
-        description = request.form.get('description', '').strip()
+        form = _complaint_form_from_request()
+        violation_type = form['violation_type']
+        street_address = form['street_address']
+        barangay = form['barangay']
+        municipality = form['municipality']
+        date_incident = form['date_incident']
+        description = form['description'].strip()
         photo = request.files.get('photo')
 
-        # Validate fields
-        if not all([violation_type, street_address, barangay, municipality, date_incident, description]):
-            flash('All required fields must be filled.', 'danger')
-            return render_template('user/submit_complaint.html')
+        if not violation_type:
+            flash('Please select a violation type.', 'danger')
+            return _render_submit_form(form)
+
+        if not street_address:
+            flash('Please enter a street address.', 'danger')
+            return _render_submit_form(form)
+
+        if not barangay:
+            flash('Please enter a barangay.', 'danger')
+            return _render_submit_form(form)
+
+        if not municipality:
+            flash('Please enter a municipality.', 'danger')
+            return _render_submit_form(form)
+
+        if not date_incident:
+            flash('Please select the date of incident.', 'danger')
+            return _render_submit_form(form)
+
+        if not description:
+            flash('Please enter a description of the violation.', 'danger')
+            return _render_submit_form(form)
 
         if len(description) < 20:
-            flash('Description must be at least 20 characters.', 'danger')
-            return render_template('user/submit_complaint.html')
+            flash(
+                f'Description must be at least 20 characters (you entered {len(description)}).',
+                'danger',
+            )
+            return _render_submit_form(form)
 
-        # Validate violation type whitelist
-        allowed_types = ['Illegal Dumping', 'Air Pollution', 'Water Pollution', 'Illegal Logging', 'Others']
-        if violation_type not in allowed_types:
+        if violation_type not in ALLOWED_VIOLATION_TYPES:
             flash('Invalid violation type selected.', 'danger')
-            return render_template('user/submit_complaint.html')
+            return _render_submit_form(form)
 
-        # Validate date — no future dates
         from datetime import date
         try:
             incident_date = date.fromisoformat(date_incident)
             if incident_date > date.today():
                 flash('Date of incident cannot be a future date.', 'danger')
-                return render_template('user/submit_complaint.html')
+                return _render_submit_form(form)
         except ValueError:
             flash('Invalid date format.', 'danger')
-            return render_template('user/submit_complaint.html')
+            return _render_submit_form(form)
 
-        # Handle photo upload
         photo_path = None
         if photo and photo.filename != '':
             import os
             from werkzeug.utils import secure_filename
-            from PIL import Image
 
             allowed_extensions = {'jpg', 'jpeg', 'png'}
             ext = photo.filename.rsplit('.', 1)[-1].lower()
             if ext not in allowed_extensions:
                 flash('Photo must be JPG or PNG only.', 'danger')
-                return render_template('user/submit_complaint.html')
+                return _render_submit_form(form)
 
             photo.seek(0, 2)
             file_size = photo.tell()
             photo.seek(0)
             if file_size > 5 * 1024 * 1024:
                 flash('Photo must not exceed 5MB.', 'danger')
-                return render_template('user/submit_complaint.html')
+                return _render_submit_form(form)
+
+            from datetime import datetime
 
             filename = secure_filename(photo.filename)
+            unique_name = f'{current_user.id}_{datetime.utcnow().strftime("%Y%m%d%H%M%S")}_{filename}'
             upload_folder = os.path.join('static', 'uploads')
             os.makedirs(upload_folder, exist_ok=True)
-            photo_path = os.path.join(upload_folder, filename)
+            photo_path = os.path.join(upload_folder, unique_name)
             photo.save(photo_path)
 
-        # Auto-agency routing — ING009C
         agency_map = {
             'Illegal Dumping': 'LGU',
             'Air Pollution': 'DENR',
@@ -184,12 +230,10 @@ def submit_complaint():
 
         from models import Agency, Complaint
         from extensions import db
-        from flask_login import current_user
 
         agency = Agency.query.filter_by(agency_name=agency_name).first()
         agency_id = agency.id if agency else None
 
-        # Save complaint
         new_complaint = Complaint(
             user_id=current_user.id,
             agency_id=agency_id,
@@ -205,18 +249,85 @@ def submit_complaint():
         db.session.add(new_complaint)
         db.session.commit()
 
-        flash('Complaint submitted successfully!', 'success')
+        letter_failed = False
+        try:
+            from services.gemini_letter import generate_complaint_letter
+
+            letter_text = generate_complaint_letter(new_complaint, current_user, agency)
+            new_complaint.generated_letter = letter_text
+            new_complaint.letter_generated = True
+            db.session.commit()
+        except Exception as exc:
+            letter_failed = True
+            print(f'Gemini letter generation failed: {exc}')
+
+        if letter_failed:
+            flash(
+                'Complaint saved successfully. Letter generation failed. Please try again later.',
+                'warning',
+            )
+        else:
+            flash('Complaint submitted successfully!', 'success')
+
         return redirect(url_for('user.complaint_submitted', complaint_id=new_complaint.id))
 
-    return render_template('user/submit_complaint.html')
+    return _render_submit_form()
 
 
 @user_bp.route('/submitted/<int:complaint_id>')
-@login_required
+@member_required
 def complaint_submitted(complaint_id):
     from models import Complaint
+
     complaint = Complaint.query.get_or_404(complaint_id)
+    if complaint.user_id != current_user.id:
+        abort(403)
     return render_template('user/complaint_submitted.html', complaint=complaint)
+
+
+def _get_owned_complaint_with_letter(complaint_id):
+    from models import Complaint
+
+    complaint = Complaint.query.get_or_404(complaint_id)
+    if complaint.user_id != current_user.id:
+        abort(403)
+    if not complaint.letter_generated or not complaint.generated_letter:
+        flash('No generated letter is available for this complaint.', 'warning')
+        return None
+    return complaint
+
+
+@user_bp.route('/submitted/<int:complaint_id>/download/pdf')
+@member_required
+def download_letter_pdf(complaint_id):
+    complaint = _get_owned_complaint_with_letter(complaint_id)
+    if not complaint:
+        return redirect(url_for('user.complaint_submitted', complaint_id=complaint_id))
+
+    from services.letter_export import build_letter_pdf
+
+    pdf_buffer = build_letter_pdf(complaint.generated_letter, complaint.id)
+    filename = f'INGAT_Complaint_{complaint.id:04d}.pdf'
+    return send_file(pdf_buffer, mimetype='application/pdf', as_attachment=True, download_name=filename)
+
+
+@user_bp.route('/submitted/<int:complaint_id>/download/docx')
+@member_required
+def download_letter_docx(complaint_id):
+    complaint = _get_owned_complaint_with_letter(complaint_id)
+    if not complaint:
+        return redirect(url_for('user.complaint_submitted', complaint_id=complaint_id))
+
+    from services.letter_export import build_letter_docx
+
+    docx_buffer = build_letter_docx(complaint.generated_letter, complaint.id)
+    filename = f'INGAT_Complaint_{complaint.id:04d}.docx'
+    return send_file(
+        docx_buffer,
+        mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        as_attachment=True,
+        download_name=filename,
+    )
 
 
 @user_bp.route('/forgot-password', methods=['GET', 'POST'])
@@ -243,7 +354,6 @@ def forgot_password():
             <p>This link expires in <strong>1 hour</strong>.</p>
             <p>If you did not request this, ignore this email.</p>
             """
-            from utils import send_email
             send_email(email, 'INGAT — Password Reset Request', body)
 
         flash('If that email is registered, a reset link has been sent.', 'info')
@@ -286,7 +396,8 @@ def reset_password(token):
 
     return render_template('user/reset_password.html', token=token)
 
+
 @user_bp.route('/my-reports')
-@login_required
+@member_required
 def my_reports():
     return render_template('user/my_reports.html')

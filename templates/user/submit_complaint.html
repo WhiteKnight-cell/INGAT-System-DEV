@@ -63,7 +63,8 @@
 </head>
 <body>
 
-<!-- Navbar -->
+{% set f = form or {} %}
+
 <nav class="navbar navbar-dark navbar-ingat px-4 py-2">
     <span class="navbar-brand fw-bold">🌿 INGAT</span>
     <div class="d-flex align-items-center gap-3">
@@ -86,50 +87,51 @@
     {% endwith %}
 
     <form method="POST" action="{{ url_for('user.submit_complaint') }}"
-          enctype="multipart/form-data">
+          enctype="multipart/form-data" id="complaint-form" novalidate
+          onsubmit="return validateComplaintForm()">
 
-        <!-- Violation Type -->
         <div class="card p-4 mb-3">
             <div class="section-title">Violation Details</div>
             <div class="mb-3">
                 <label class="form-label small fw-semibold">Violation Type <span class="text-danger">*</span></label>
-                <select name="violation_type" class="form-select" required>
-                    <option value="" disabled selected>Select violation type</option>
-                    <option value="Illegal Dumping">Illegal Dumping</option>
-                    <option value="Air Pollution">Air Pollution</option>
-                    <option value="Water Pollution">Water Pollution</option>
-                    <option value="Illegal Logging">Illegal Logging</option>
-                    <option value="Others">Others</option>
+                <select name="violation_type" id="violation_type" class="form-select" required>
+                    <option value="" disabled {% if not f.get('violation_type') %}selected{% endif %}>
+                        Select violation type
+                    </option>
+                    {% for vt in ['Illegal Dumping', 'Air Pollution', 'Water Pollution', 'Illegal Logging', 'Others'] %}
+                    <option value="{{ vt }}" {% if f.get('violation_type') == vt %}selected{% endif %}>{{ vt }}</option>
+                    {% endfor %}
                 </select>
                 <div class="form-text">The complaint will be automatically routed to the correct agency.</div>
             </div>
         </div>
 
-        <!-- Location -->
         <div class="card p-4 mb-3">
             <div class="section-title">Location</div>
             <div class="mb-2">
                 <label class="form-label small fw-semibold">Street Address <span class="text-danger">*</span></label>
                 <input type="text" name="street_address" id="street_address"
-                       class="form-control" placeholder="123 Rizal St." required>
+                       class="form-control" placeholder="123 Rizal St." required
+                       value="{{ f.get('street_address', '') }}">
                 <div class="form-text text-warning small">
-                    ⚠️ Street address is for admin reference only — never shown on the map.
+                    Street address is for admin reference only — never shown on the map.
                 </div>
             </div>
             <div class="row mb-2">
                 <div class="col">
                     <label class="form-label small fw-semibold">Barangay <span class="text-danger">*</span></label>
                     <input type="text" name="barangay" id="barangay"
-                           class="form-control" placeholder="Tondo" required>
+                           class="form-control" placeholder="Tondo" required
+                           value="{{ f.get('barangay', '') }}">
                 </div>
                 <div class="col">
                     <label class="form-label small fw-semibold">Municipality <span class="text-danger">*</span></label>
                     <input type="text" name="municipality" id="municipality"
-                           class="form-control" placeholder="Manila" required>
+                           class="form-control" placeholder="Manila" required
+                           value="{{ f.get('municipality', '') }}">
                 </div>
             </div>
 
-            <!-- Map -->
             <div class="mb-2">
                 <button type="button" class="btn btn-outline-success btn-sm mb-2"
                         onclick="showMap()">
@@ -143,24 +145,23 @@
             </div>
         </div>
 
-        <!-- Incident Details -->
         <div class="card p-4 mb-3">
             <div class="section-title">Incident Details</div>
             <div class="mb-3">
                 <label class="form-label small fw-semibold">Date of Incident <span class="text-danger">*</span></label>
                 <input type="date" name="date_incident" id="date_incident"
-                       class="form-control" required>
+                       class="form-control" required
+                       value="{{ f.get('date_incident', '') }}">
             </div>
             <div class="mb-3">
                 <label class="form-label small fw-semibold">Description <span class="text-danger">*</span></label>
                 <textarea name="description" id="description" class="form-control"
                           rows="4" placeholder="Describe the violation in detail..."
-                          required oninput="countChars()"></textarea>
+                          required minlength="20" oninput="countChars()">{{ f.get('description', '') }}</textarea>
                 <div class="char-count" id="char-count">0 / minimum 20 characters</div>
             </div>
         </div>
 
-        <!-- Photo Evidence -->
         <div class="card p-4 mb-3">
             <div class="section-title">Photo Evidence (Optional)</div>
             <input type="file" name="photo" id="photo" class="form-control"
@@ -169,7 +170,6 @@
             <img id="photo-preview" class="photo-preview" src="#" alt="Photo preview">
         </div>
 
-        <!-- Submit -->
         <div class="d-grid">
             <button type="submit" class="btn btn-ingat btn-lg">
                 <i class="bi bi-send"></i> Submit Complaint
@@ -181,44 +181,68 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Set max date to today
     document.getElementById('date_incident').max = new Date().toISOString().split('T')[0];
 
-    // Show on Map — uses Barangay + Municipality ONLY (street address never used)
     function showMap() {
         const barangay = document.getElementById('barangay').value.trim();
         const municipality = document.getElementById('municipality').value.trim();
 
         if (!barangay || !municipality) {
-            alert('Please enter both Barangay and Municipality to show the map.');
+            alert('Please enter a Barangay and Municipality to show the map.');
             return;
         }
 
         const query = encodeURIComponent(barangay + ' ' + municipality);
         const url = 'https://www.google.com/maps?q=' + query + '&output=embed';
 
-        const placeholder = document.getElementById('map-placeholder');
+        document.getElementById('map-placeholder').style.display = 'none';
         const frame = document.getElementById('map-frame');
-
-        placeholder.style.display = 'none';
         frame.src = url;
         frame.style.display = 'block';
     }
 
-    // Character counter for description
     function countChars() {
-        const desc = document.getElementById('description').value;
-        const count = desc.length;
+        const count = document.getElementById('description').value.trim().length;
         const el = document.getElementById('char-count');
         el.textContent = count + ' / minimum 20 characters';
-        if (count >= 20) {
-            el.className = 'char-count success';
-        } else {
-            el.className = 'char-count error';
-        }
+        el.className = count >= 20 ? 'char-count success' : 'char-count error';
     }
 
-    // Photo preview
+    function validateComplaintForm() {
+        const violation = document.getElementById('violation_type').value.trim();
+        const street = document.getElementById('street_address').value.trim();
+        const barangay = document.getElementById('barangay').value.trim();
+        const municipality = document.getElementById('municipality').value.trim();
+        const dateVal = document.getElementById('date_incident').value.trim();
+        const descLen = document.getElementById('description').value.trim().length;
+
+        if (!violation) {
+            alert('Please select a violation type.');
+            return false;
+        }
+        if (!street) {
+            alert('Please enter a street address.');
+            return false;
+        }
+        if (!barangay) {
+            alert('Please enter a barangay.');
+            return false;
+        }
+        if (!municipality) {
+            alert('Please enter a municipality.');
+            return false;
+        }
+        if (!dateVal) {
+            alert('Please select the date of incident.');
+            return false;
+        }
+        if (descLen < 20) {
+            alert('Description must be at least 20 characters (you entered ' + descLen + ').');
+            return false;
+        }
+        return true;
+    }
+
     function previewPhoto() {
         const file = document.getElementById('photo').files[0];
         const preview = document.getElementById('photo-preview');
@@ -227,10 +251,18 @@
             reader.onload = function(e) {
                 preview.src = e.target.result;
                 preview.style.display = 'block';
-            }
+            };
             reader.readAsDataURL(file);
         }
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        countChars();
+        if (document.getElementById('barangay').value.trim() &&
+            document.getElementById('municipality').value.trim()) {
+            showMap();
+        }
+    });
 </script>
 </body>
 </html>
