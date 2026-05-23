@@ -7,7 +7,7 @@ INGAT offers a user-friendly web platform that allows Filipino community members
 ```bash
 python -m venv venv
 venv\Scripts\activate
-pip install flask flask-sqlalchemy flask-login python-dotenv google-genai fpdf2 python-docx openpyxl pillow
+pip install -r requirements.txt
 python app.py
 ```
 

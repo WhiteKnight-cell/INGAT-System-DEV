@@ -2,17 +2,20 @@ import os
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from datetime import date
 
-from google import genai
-
 GEMINI_TIMEOUT_SECONDS = 45
-# Prefer current models; fall back for older API projects (ING010A: Gemini 1.5 Flash family).
-MODEL_CANDIDATES = ('gemini-2.0-flash', 'gemini-1.5-flash')
+# Order matters: try working models first (1.5-flash is retired on many keys).
+MODEL_CANDIDATES = ('gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash-lite')
 
 
 def format_gemini_error(exc):
     """Return a short, user-safe message for UI flashes."""
     msg = str(exc)
     upper = msg.upper()
+    if 'cannot import name' in msg.lower() or 'no module named' in msg.lower():
+        return (
+            'Gemini library is not installed. Run: pip install google-genai '
+            '(or: pip install google-generativeai)'
+        )
     if 'CONSUMER_SUSPENDED' in upper or 'PERMISSION_DENIED' in upper or '403' in msg:
         return (
             'Your Gemini API key is invalid or suspended. '
@@ -22,23 +25,24 @@ def format_gemini_error(exc):
         return 'GEMINI_API_KEY is invalid. Check the value in your .env file.'
     if 'timed out' in msg.lower():
         return 'Gemini API request timed out. Please try again.'
+    if '429' in msg or 'quota' in msg.lower() or 'rate limit' in msg.lower():
+        return (
+            'Gemini rate limit reached. Wait a minute and click Try Generate Letter Again.'
+        )
+    if '404' in msg or 'not found' in msg.lower():
+        return 'Gemini model unavailable. Restart the app and try again.'
     if 'not configured' in msg.lower():
         return msg
     return 'Letter generation failed. Please try again.'
 
 
-def generate_complaint_letter(complaint, complainant, agency):
-    """Call Google Gemini to generate a formal environmental complaint letter."""
-    api_key = os.getenv('GEMINI_API_KEY', '').strip()
-    if not api_key or api_key == 'your_gemini_api_key_here':
-        raise ValueError('GEMINI_API_KEY is not configured in .env')
-
+def _build_prompt(complaint, complainant, agency):
     agency_name = agency.agency_name if agency else 'the Concerned Government Agency'
     agency_email = agency.contact_email if agency else 'N/A'
     incident_date = complaint.date_incident.strftime('%B %d, %Y')
     letter_date = date.today().strftime('%B %d, %Y')
 
-    prompt = f"""You are a legal writing assistant for INGAT, a Philippine environmental complaint system.
+    return f"""You are a legal writing assistant for INGAT, a Philippine environmental complaint system.
 Write a formal complaint letter that a community member can send to a government agency.
 
 Use clear, professional English suitable for DENR, LLDA, or LGU offices in the Philippines.
@@ -73,24 +77,61 @@ FORMAT REQUIREMENTS:
 
 Output only the letter text, no markdown code fences."""
 
+
+def _call_gemini_new_sdk(api_key, prompt):
+    from google import genai
+
     client = genai.Client(api_key=api_key)
+    last_error = None
+    for model_name in MODEL_CANDIDATES:
+        try:
+            response = client.models.generate_content(model=model_name, contents=prompt)
+            if response and response.text:
+                return response.text.strip()
+            last_error = ValueError('Gemini returned an empty response')
+        except Exception as exc:
+            last_error = exc
+    if last_error:
+        raise last_error
+    raise ValueError('Gemini returned an empty response')
+
+
+def _call_gemini_legacy_sdk(api_key, prompt):
+    import google.generativeai as genai
+
+    genai.configure(api_key=api_key)
+    last_error = None
+    for model_name in MODEL_CANDIDATES:
+        try:
+            model = genai.GenerativeModel(model_name)
+            response = model.generate_content(prompt)
+            if response and response.text:
+                return response.text.strip()
+            last_error = ValueError('Gemini returned an empty response')
+        except Exception as exc:
+            last_error = exc
+    if last_error:
+        raise last_error
+    raise ValueError('Gemini returned an empty response')
+
+
+def generate_complaint_letter(complaint, complainant, agency):
+    """Call Google Gemini to generate a formal environmental complaint letter."""
+    api_key = os.getenv('GEMINI_API_KEY', '').strip()
+    if not api_key or api_key == 'your_gemini_api_key_here':
+        raise ValueError(
+            'GEMINI_API_KEY is not set. Open .env in the project folder, paste your key '
+            'from Google AI Studio, save the file (Ctrl+S), then restart python app.py.'
+        )
+
+    prompt = _build_prompt(complaint, complainant, agency)
 
     def _call_api():
-        last_error = None
-        for model_name in MODEL_CANDIDATES:
-            try:
-                response = client.models.generate_content(
-                    model=model_name,
-                    contents=prompt,
-                )
-                if response and response.text:
-                    return response.text.strip()
-                last_error = ValueError('Gemini returned an empty response')
-            except Exception as exc:
-                last_error = exc
-        if last_error:
-            raise last_error
-        raise ValueError('Gemini returned an empty response')
+        try:
+            from google import genai as _  # noqa: F401
+            return _call_gemini_new_sdk(api_key, prompt)
+        except ImportError:
+            return _call_gemini_legacy_sdk(api_key, prompt)
 
     with ThreadPoolExecutor(max_workers=1) as executor:
         future = executor.submit(_call_api)

@@ -1,0 +1,10 @@
+flask
+flask-sqlalchemy
+flask-login
+python-dotenv
+google-generativeai
+google-genai
+fpdf2
+python-docx
+openpyxl
+pillow

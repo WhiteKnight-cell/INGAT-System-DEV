@@ -1,9 +1,12 @@
+from pathlib import Path
+
 from flask import Flask, redirect, request, url_for
 from extensions import db, login_manager
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+# Always load project-root .env (override stale shell placeholders).
+load_dotenv(Path(__file__).resolve().parent / '.env', override=True)
 
 
 def seed_default_agencies():

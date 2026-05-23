@@ -33,7 +33,6 @@ def _render_submit_form(form=None):
     return render_template('user/submit_complaint.html', form=form or {})
 
 
-<<<<<<< HEAD
 def _register_form_from_request():
     """Preserve submitted values when re-rendering registration after validation errors."""
     return {
@@ -49,7 +48,8 @@ def _register_form_from_request():
 
 def _render_register_form(form=None):
     return render_template('user/register.html', form=form or {})
-=======
+
+
 def _generate_letter_for_complaint(complaint, complainant):
     """Generate and persist Gemini letter. Returns (success, user_message_or_none)."""
     from extensions import db
@@ -66,7 +66,6 @@ def _generate_letter_for_complaint(complaint, complainant):
     except Exception as exc:
         print(f'Gemini letter generation failed: {exc}')
         return False, format_gemini_error(exc)
->>>>>>> 3c3e946 (Move current changes to user-side)
 
 
 @user_bp.route('/register', methods=['GET', 'POST'])
