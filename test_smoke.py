@@ -176,6 +176,18 @@ def run_tests():
         else:
             fail("Complaint success page", f"status {r.status_code}")
 
+        r = client.get(f"/user/submitted/{cid}")
+        if b"Try Generate Letter Again" in r.data or b"Preview Generated Letter" in r.data:
+            ok("Complaint page shows letter preview or retry")
+        else:
+            fail("Complaint page letter UI", "missing preview/retry controls")
+
+        r = client.post(f"/user/submitted/{cid}/regenerate-letter", follow_redirects=False)
+        if r.status_code == 302 and f"/user/submitted/{cid}" in (r.location or ""):
+            ok("Regenerate letter route")
+        else:
+            fail("Regenerate letter route", f"status {r.status_code} loc {r.location}")
+
         with app.app_context():
             c = Complaint.query.get(cid)
             if c:

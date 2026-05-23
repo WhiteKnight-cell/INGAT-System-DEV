@@ -138,8 +138,7 @@
                     <i class="bi bi-map"></i> Show on Map
                 </button>
                 <div id="map-placeholder">
-                    <i class="bi bi-map me-2"></i>
-                    Click "Show on Map" to preview barangay location
+                    Click Show on Map to preview barangay location
                 </div>
                 <iframe id="map-frame" allowfullscreen></iframe>
             </div>
@@ -192,7 +191,7 @@
             return;
         }
 
-        const query = encodeURIComponent(barangay + ' ' + municipality);
+        const query = encodeURIComponent(barangay + ', ' + municipality + ', Philippines');
         const url = 'https://www.google.com/maps?q=' + query + '&output=embed';
 
         document.getElementById('map-placeholder').style.display = 'none';

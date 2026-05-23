@@ -33,6 +33,7 @@ def _render_submit_form(form=None):
     return render_template('user/submit_complaint.html', form=form or {})
 
 
+<<<<<<< HEAD
 def _register_form_from_request():
     """Preserve submitted values when re-rendering registration after validation errors."""
     return {
@@ -48,6 +49,24 @@ def _register_form_from_request():
 
 def _render_register_form(form=None):
     return render_template('user/register.html', form=form or {})
+=======
+def _generate_letter_for_complaint(complaint, complainant):
+    """Generate and persist Gemini letter. Returns (success, user_message_or_none)."""
+    from extensions import db
+    from models import Agency
+    from services.gemini_letter import format_gemini_error, generate_complaint_letter
+
+    agency = Agency.query.get(complaint.agency_id) if complaint.agency_id else None
+    try:
+        letter_text = generate_complaint_letter(complaint, complainant, agency)
+        complaint.generated_letter = letter_text
+        complaint.letter_generated = True
+        db.session.commit()
+        return True, None
+    except Exception as exc:
+        print(f'Gemini letter generation failed: {exc}')
+        return False, format_gemini_error(exc)
+>>>>>>> 3c3e946 (Move current changes to user-side)
 
 
 @user_bp.route('/register', methods=['GET', 'POST'])
@@ -267,25 +286,12 @@ def submit_complaint():
         db.session.add(new_complaint)
         db.session.commit()
 
-        letter_failed = False
-        try:
-            from services.gemini_letter import generate_complaint_letter
+        letter_ok, letter_error = _generate_letter_for_complaint(new_complaint, current_user)
 
-            letter_text = generate_complaint_letter(new_complaint, current_user, agency)
-            new_complaint.generated_letter = letter_text
-            new_complaint.letter_generated = True
-            db.session.commit()
-        except Exception as exc:
-            letter_failed = True
-            print(f'Gemini letter generation failed: {exc}')
-
-        if letter_failed:
-            flash(
-                'Complaint saved successfully. Letter generation failed. Please try again later.',
-                'warning',
-            )
-        else:
+        if letter_ok:
             flash('Complaint submitted successfully!', 'success')
+        else:
+            flash(f'Complaint saved. {letter_error}', 'warning')
 
         return redirect(url_for('user.complaint_submitted', complaint_id=new_complaint.id))
 
@@ -301,6 +307,28 @@ def complaint_submitted(complaint_id):
     if complaint.user_id != current_user.id:
         abort(403)
     return render_template('user/complaint_submitted.html', complaint=complaint)
+
+
+@user_bp.route('/submitted/<int:complaint_id>/regenerate-letter', methods=['POST'])
+@member_required
+def regenerate_letter(complaint_id):
+    from models import Complaint
+
+    complaint = Complaint.query.get_or_404(complaint_id)
+    if complaint.user_id != current_user.id:
+        abort(403)
+
+    if complaint.letter_generated and complaint.generated_letter:
+        flash('Letter is already available for this complaint.', 'info')
+        return redirect(url_for('user.complaint_submitted', complaint_id=complaint_id))
+
+    letter_ok, letter_error = _generate_letter_for_complaint(complaint, current_user)
+    if letter_ok:
+        flash('Formal complaint letter generated successfully!', 'success')
+    else:
+        flash(letter_error, 'warning')
+
+    return redirect(url_for('user.complaint_submitted', complaint_id=complaint_id))
 
 
 def _get_owned_complaint_with_letter(complaint_id):

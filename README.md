@@ -7,7 +7,7 @@ INGAT offers a user-friendly web platform that allows Filipino community members
 ```bash
 python -m venv venv
 venv\Scripts\activate
-pip install flask flask-sqlalchemy flask-login python-dotenv google-generativeai fpdf2 python-docx openpyxl pillow
+pip install flask flask-sqlalchemy flask-login python-dotenv google-genai fpdf2 python-docx openpyxl pillow
 python app.py
 ```
 
@@ -26,3 +26,5 @@ python -c "from app import app; from extensions import db; from models import Ad
 ```
 
 Default agencies (DENR, LLDA, LGU) are seeded automatically on first run.
+
+Copy `.env.example` to `.env` and set `GEMINI_API_KEY` from [Google AI Studio](https://aistudio.google.com/apikey) for AI complaint letters (Sprint 3).
