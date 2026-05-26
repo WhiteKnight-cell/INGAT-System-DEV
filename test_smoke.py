@@ -50,6 +50,12 @@ def run_tests():
     else:
         fail("Submit complaint requires login", r.location)
 
+    r = client.get("/user/my-reports")
+    if r.status_code == 302 and "/user/login" in (r.location or ""):
+        ok("My reports requires login")
+    else:
+        fail("My reports requires login", r.location)
+
     r = client.get("/admin/dashboard")
     if r.status_code == 302 and "/admin/login" in (r.location or ""):
         ok("Admin dashboard requires login")
@@ -212,6 +218,51 @@ def run_tests():
             ok("Download letter DOCX")
         else:
             fail("Download letter DOCX", f"status {r.status_code} type {r.mimetype}")
+
+        r = client.get("/user/my-reports")
+        if r.status_code == 200 and b"My Reports" in r.data and b"#ING-" in r.data:
+            ok("My reports list shows complaint")
+        else:
+            fail("My reports list", f"status {r.status_code}")
+
+        r = client.get(f"/user/my-reports/{cid}")
+        if r.status_code == 200 and b"Illegal Dumping" in r.data:
+            ok("Report detail page loads")
+        else:
+            fail("Report detail page", f"status {r.status_code}")
+
+        r = client.get("/user/my-reports?status=Resolved")
+        if r.status_code == 200 and (
+            b"No reports found" in r.data or b"No complaints match" in r.data
+        ):
+            ok("My reports status filter")
+        else:
+            fail("My reports status filter", f"status {r.status_code}")
+
+        other_email = f"other_{uuid.uuid4().hex[:8]}@test.local"
+        with app.app_context():
+            other_user = User(
+                full_name="Other User",
+                email=other_email,
+                contact_number="09111111111",
+                barangay="Quiapo",
+                municipality="Manila",
+                password_hash=generate_password_hash("Test@1234"),
+            )
+            db.session.add(other_user)
+            db.session.commit()
+
+        client.get("/user/logout", follow_redirects=True)
+        client.post(
+            "/user/login",
+            data={"email": other_email, "password": "Test@1234"},
+            follow_redirects=True,
+        )
+        r = client.get(f"/user/my-reports/{cid}")
+        if r.status_code == 403:
+            ok("Report detail forbidden for other user")
+        else:
+            fail("Report detail forbidden for other user", f"status {r.status_code}")
 
     print(f"\n=== Results: {passed} passed, {failed} failed ===\n")
     return failed == 0

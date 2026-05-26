@@ -308,6 +308,12 @@ def complaint_submitted(complaint_id):
     return render_template('user/complaint_submitted.html', complaint=complaint)
 
 
+def _letter_redirect(complaint_id, from_report=False):
+    if from_report:
+        return redirect(url_for('user.report_detail', complaint_id=complaint_id))
+    return redirect(url_for('user.complaint_submitted', complaint_id=complaint_id))
+
+
 @user_bp.route('/submitted/<int:complaint_id>/regenerate-letter', methods=['POST'])
 @member_required
 def regenerate_letter(complaint_id):
@@ -317,9 +323,11 @@ def regenerate_letter(complaint_id):
     if complaint.user_id != current_user.id:
         abort(403)
 
+    from_report = request.form.get('from') == 'report'
+
     if complaint.letter_generated and complaint.generated_letter:
         flash('Letter is already available for this complaint.', 'info')
-        return redirect(url_for('user.complaint_submitted', complaint_id=complaint_id))
+        return _letter_redirect(complaint_id, from_report)
 
     letter_ok, letter_error = _generate_letter_for_complaint(complaint, current_user)
     if letter_ok:
@@ -327,7 +335,7 @@ def regenerate_letter(complaint_id):
     else:
         flash(letter_error, 'warning')
 
-    return redirect(url_for('user.complaint_submitted', complaint_id=complaint_id))
+    return _letter_redirect(complaint_id, from_report)
 
 
 def _get_owned_complaint_with_letter(complaint_id):
@@ -442,7 +450,52 @@ def reset_password(token):
     return render_template('user/reset_password.html', token=token)
 
 
+def _complaint_photo_url(complaint):
+    if not complaint.photo_path:
+        return None
+    path = complaint.photo_path.replace('\\', '/')
+    if path.startswith('static/'):
+        path = path[len('static/'):]
+    return url_for('static', filename=path)
+
+
 @user_bp.route('/my-reports')
 @member_required
 def my_reports():
-    return render_template('user/my_reports.html')
+    from models import Complaint
+
+    status_filter = request.args.get('status', '').strip()
+    query = Complaint.query.filter_by(user_id=current_user.id)
+    if status_filter:
+        query = query.filter_by(status=status_filter)
+    complaints = query.order_by(Complaint.created_at.desc()).all()
+
+    all_statuses = ['Submitted', 'Under Review', 'Forwarded to Agency', 'Resolved']
+    return render_template(
+        'user/my_reports.html',
+        complaints=complaints,
+        status_filter=status_filter,
+        all_statuses=all_statuses,
+    )
+
+
+@user_bp.route('/my-reports/<int:complaint_id>')
+@member_required
+def report_detail(complaint_id):
+    from models import Complaint
+
+    complaint = Complaint.query.get_or_404(complaint_id)
+    if complaint.user_id != current_user.id:
+        abort(403)
+
+    status_history = sorted(
+        complaint.status_history,
+        key=lambda entry: entry.updated_at,
+        reverse=True,
+    )
+    return render_template(
+        'user/report_detail.html',
+        complaint=complaint,
+        status_history=status_history,
+        photo_url=_complaint_photo_url(complaint),
+    )

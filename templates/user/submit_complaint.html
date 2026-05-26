@@ -67,10 +67,12 @@
 
 <nav class="navbar navbar-dark navbar-ingat px-4 py-2">
     <span class="navbar-brand fw-bold">🌿 INGAT</span>
-    <div class="d-flex align-items-center gap-3">
-        <span class="text-white small">{{ current_user.full_name }}</span>
-        <a href="{{ url_for('user.user_logout') }}"
-           class="btn btn-outline-light btn-sm">Logout</a>
+    <div class="d-flex align-items-center gap-2">
+        <span class="text-white small d-none d-md-inline">{{ current_user.full_name }}</span>
+        <a href="{{ url_for('user.my_reports') }}" class="btn btn-outline-light btn-sm">
+            <i class="bi bi-list-ul"></i> My Reports
+        </a>
+        <a href="{{ url_for('user.user_logout') }}" class="btn btn-outline-light btn-sm">Logout</a>
     </div>
 </nav>
 
