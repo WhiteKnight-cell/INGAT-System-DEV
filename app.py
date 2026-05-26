@@ -37,6 +37,23 @@ def seed_default_agencies():
     db.session.commit()
 
 
+def seed_default_admin():
+    from models import AdminUser
+    from werkzeug.security import generate_password_hash
+
+    admin_email = os.getenv('ADMIN_EMAIL', 'admin@ingat.com')
+    admin_password = os.getenv('ADMIN_PASSWORD', 'Admin@1234')
+
+    if AdminUser.query.filter_by(email=admin_email).first():
+        return
+
+    db.session.add(AdminUser(
+        email=admin_email,
+        password_hash=generate_password_hash(admin_password),
+    ))
+    db.session.commit()
+
+
 def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'ingat-secret-key-2026')
@@ -82,6 +99,7 @@ def create_app():
     with app.app_context():
         import models  # noqa: F401
         db.create_all()
+        seed_default_admin()
         seed_default_agencies()
 
     return app
