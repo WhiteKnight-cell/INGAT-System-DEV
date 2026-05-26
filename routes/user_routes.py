@@ -17,6 +17,20 @@ ALLOWED_VIOLATION_TYPES = [
 ]
 
 
+def _password_error(password):
+    if len(password) < 8:
+        return 'Password must be at least 8 characters.'
+    if not re.search(r'[A-Z]', password):
+        return 'Password must contain at least one uppercase letter.'
+    if not re.search(r'[a-z]', password):
+        return 'Password must contain at least one lowercase letter.'
+    if not re.search(r'[0-9]', password):
+        return 'Password must contain at least one number.'
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+        return 'Password must contain at least one special character.'
+    return None
+
+
 def _complaint_form_from_request():
     """Preserve submitted values when re-rendering the form after validation errors."""
     return {
@@ -54,7 +68,11 @@ def _generate_letter_for_complaint(complaint, complainant):
     """Generate and persist Gemini letter. Returns (success, user_message_or_none)."""
     from extensions import db
     from models import Agency
-    from services.gemini_letter import format_gemini_error, generate_complaint_letter
+    from services.gemini_letter import (
+        build_fallback_complaint_letter,
+        format_gemini_error,
+        generate_complaint_letter,
+    )
 
     agency = Agency.query.get(complaint.agency_id) if complaint.agency_id else None
     try:
@@ -65,7 +83,15 @@ def _generate_letter_for_complaint(complaint, complainant):
         return True, None
     except Exception as exc:
         print(f'Gemini letter generation failed: {exc}')
-        return False, format_gemini_error(exc)
+        print(format_gemini_error(exc))
+        complaint.generated_letter = build_fallback_complaint_letter(
+            complaint,
+            complainant,
+            agency,
+        )
+        complaint.letter_generated = True
+        db.session.commit()
+        return True, 'fallback'
 
 
 @user_bp.route('/register', methods=['GET', 'POST'])
@@ -92,24 +118,9 @@ def register():
             flash('Passwords do not match.', 'danger')
             return _render_register_form(form)
 
-        if len(password) < 8:
-            flash('Password must be at least 8 characters.', 'danger')
-            return _render_register_form(form)
-
-        if not re.search(r'[A-Z]', password):
-            flash('Password must contain at least one uppercase letter.', 'danger')
-            return _render_register_form(form)
-
-        if not re.search(r'[a-z]', password):
-            flash('Password must contain at least one lowercase letter.', 'danger')
-            return _render_register_form(form)
-
-        if not re.search(r'[0-9]', password):
-            flash('Password must contain at least one number.', 'danger')
-            return _render_register_form(form)
-
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
-            flash('Password must contain at least one special character.', 'danger')
+        password_error = _password_error(password)
+        if password_error:
+            flash(password_error, 'danger')
             return _render_register_form(form)
 
         from models import User
@@ -287,7 +298,12 @@ def submit_complaint():
 
         letter_ok, letter_error = _generate_letter_for_complaint(new_complaint, current_user)
 
-        if letter_ok:
+        if letter_error == 'fallback':
+            flash(
+                'Complaint submitted successfully. A formal letter was generated using the offline template.',
+                'info',
+            )
+        elif letter_ok:
             flash('Complaint submitted successfully!', 'success')
         else:
             flash(f'Complaint saved. {letter_error}', 'warning')
@@ -434,8 +450,9 @@ def reset_password(token):
             flash('Passwords do not match.', 'danger')
             return render_template('user/reset_password.html', token=token)
 
-        if len(password) < 8:
-            flash('Password must be at least 8 characters.', 'danger')
+        password_error = _password_error(password)
+        if password_error:
+            flash(password_error, 'danger')
             return render_template('user/reset_password.html', token=token)
 
         from models import User
@@ -465,17 +482,32 @@ def my_reports():
     from models import Complaint
 
     status_filter = request.args.get('status', '').strip()
+    violation_filter = request.args.get('violation_type', '').strip()
+    search = request.args.get('q', '').strip()
+
     query = Complaint.query.filter_by(user_id=current_user.id)
     if status_filter:
         query = query.filter_by(status=status_filter)
-    complaints = query.order_by(Complaint.created_at.desc()).all()
+    if violation_filter:
+        query = query.filter_by(violation_type=violation_filter)
+    if search:
+        normalized = search.upper().replace('#ING-', '').replace('ING-', '').strip()
+        try:
+            query = query.filter_by(id=int(normalized))
+        except ValueError:
+            query = query.filter(Complaint.id == -1)
 
+    complaints = query.order_by(Complaint.created_at.desc()).all()
     all_statuses = ['Submitted', 'Under Review', 'Forwarded to Agency', 'Resolved']
+
     return render_template(
         'user/my_reports.html',
         complaints=complaints,
         status_filter=status_filter,
+        violation_filter=violation_filter,
+        search=search,
         all_statuses=all_statuses,
+        violation_types=ALLOWED_VIOLATION_TYPES,
     )
 
 

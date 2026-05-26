@@ -62,6 +62,12 @@ def run_tests():
     else:
         fail("Admin dashboard requires login", r.location)
 
+    r = client.get("/admin/reports")
+    if r.status_code == 302 and "/admin/login" in (r.location or ""):
+        ok("Manage reports requires admin login")
+    else:
+        fail("Manage reports requires admin login", r.location)
+
     with app.app_context():
         agencies = Agency.query.count()
         if agencies >= 3:
@@ -220,13 +226,25 @@ def run_tests():
             fail("Download letter DOCX", f"status {r.status_code} type {r.mimetype}")
 
         r = client.get("/user/my-reports")
-        if r.status_code == 200 and b"My Reports" in r.data and b"#ING-" in r.data:
+        if r.status_code == 200 and b"My Reports" in r.data and b"ING-" in r.data:
             ok("My reports list shows complaint")
         else:
             fail("My reports list", f"status {r.status_code}")
 
-        r = client.get(f"/user/my-reports/{cid}")
+        r = client.get(f"/user/my-reports?q=ING-{cid:04d}")
+        if r.status_code == 200 and f"ING-{cid:04d}".encode() in r.data:
+            ok("My reports complaint ID search")
+        else:
+            fail("My reports complaint ID search", f"status {r.status_code}")
+
+        r = client.get("/user/my-reports?violation_type=Illegal+Dumping&status=Submitted")
         if r.status_code == 200 and b"Illegal Dumping" in r.data:
+            ok("My reports filters")
+        else:
+            fail("My reports filters", f"status {r.status_code}")
+
+        r = client.get(f"/user/my-reports/{cid}")
+        if r.status_code == 200 and b"Illegal Dumping" in r.data and b"AI-Generated Letter" in r.data:
             ok("Report detail page loads")
         else:
             fail("Report detail page", f"status {r.status_code}")
@@ -263,6 +281,37 @@ def run_tests():
             ok("Report detail forbidden for other user")
         else:
             fail("Report detail forbidden for other user", f"status {r.status_code}")
+
+        client.get("/user/logout", follow_redirects=True)
+        client.post(
+            "/admin/login",
+            data={"email": "admin@ingat.com", "password": "Admin@1234"},
+            follow_redirects=False,
+        )
+
+        r = client.get("/admin/reports")
+        if r.status_code == 200 and b"Manage Reports" in r.data and b"ING-" in r.data:
+            ok("Admin manage reports list")
+        else:
+            fail("Admin manage reports list", f"status {r.status_code}")
+
+        r = client.get(f"/admin/reports?q=Smoke+Test+User&violation_type=Illegal+Dumping&sort=status")
+        if r.status_code == 200 and b"Smoke Test User" in r.data:
+            ok("Admin manage reports search and filters")
+        else:
+            fail("Admin manage reports search and filters", f"status {r.status_code}")
+
+        r = client.get(f"/admin/reports/{cid}")
+        if r.status_code == 200 and b"Complaint Information" in r.data:
+            ok("Admin report detail")
+        else:
+            fail("Admin report detail", f"status {r.status_code}")
+
+        r = client.get("/admin/reports/export")
+        if r.status_code == 200 and "text/csv" in (r.mimetype or ""):
+            ok("Admin reports CSV export")
+        else:
+            fail("Admin reports CSV export", f"status {r.status_code} type {r.mimetype}")
 
     print(f"\n=== Results: {passed} passed, {failed} failed ===\n")
     return failed == 0

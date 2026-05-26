@@ -36,6 +36,39 @@ def format_gemini_error(exc):
     return 'Letter generation failed. Please try again.'
 
 
+def build_fallback_complaint_letter(complaint, complainant, agency):
+    """Build a formal letter locally when Gemini is not available."""
+    from datetime import date
+
+    agency_name = agency.agency_name if agency else 'the Concerned Government Agency'
+    incident_date = complaint.date_incident.strftime('%B %d, %Y')
+    letter_date = date.today().strftime('%B %d, %Y')
+
+    return f"""{letter_date}
+
+{agency_name}
+
+RE: Environmental Complaint Regarding {complaint.violation_type} in {complaint.barangay}
+
+Dear Sir/Madam:
+
+I am writing to formally report an environmental concern involving {complaint.violation_type} in {complaint.barangay}, {complaint.municipality}. The incident was observed on {incident_date} at {complaint.street_address}.
+
+Based on my report, the following details describe the concern:
+
+{complaint.description}
+
+I respectfully request your office to review this complaint and take the appropriate action according to your agency's procedures. This report is submitted in good faith to help protect the community and support proper handling of environmental violations.
+
+Thank you for your attention to this matter.
+
+Respectfully yours,
+
+{complainant.full_name}
+{complainant.email}
+{complainant.contact_number}"""
+
+
 def _build_prompt(complaint, complainant, agency):
     agency_name = agency.agency_name if agency else 'the Concerned Government Agency'
     agency_email = agency.contact_email if agency else 'N/A'
