@@ -144,7 +144,11 @@ def register():
         flash('Account created successfully! Please log in.', 'success')
         return redirect(url_for('user.user_login'))
 
+<<<<<<< Updated upstream
     return _render_register_form()
+=======
+    return render_template('user/register.html', form_data=request.form)
+>>>>>>> Stashed changes
 
 
 @user_bp.route('/login', methods=['GET', 'POST'])
