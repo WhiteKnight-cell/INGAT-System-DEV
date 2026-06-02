@@ -1,10 +1,17 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, current_user
+from datetime import datetime, timedelta
 import re
 
 from routes.auth import member_required
-from utils import generate_reset_token, send_email, verify_reset_token
+from utils import (
+    generate_reset_token,
+    send_email,
+    verify_reset_token,
+    generate_otp_code,
+    send_verification_email,
+)
 
 user_bp = Blueprint('user', __name__, url_prefix='/user')
 
@@ -29,6 +36,30 @@ def _password_error(password):
     if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
         return 'Password must contain at least one special character.'
     return None
+
+
+def _create_email_verification(user):
+    from extensions import db
+    from models import EmailVerification
+
+    otp_code = generate_otp_code()
+    expires_at = datetime.utcnow() + timedelta(minutes=15)
+    verification = EmailVerification(
+        user_id=user.id,
+        otp_code=otp_code,
+        expires_at=expires_at,
+    )
+    db.session.add(verification)
+    db.session.commit()
+    return verification
+
+
+def _send_account_verification_email(user, otp_code):
+    sent = send_verification_email(user.email, user.full_name, otp_code)
+    if not sent:
+        print(f'Failed to send verification email for user {user.email}')
+        print(f'Local OTP for {user.email}: {otp_code}')
+    return sent
 
 
 def _complaint_form_from_request():
@@ -127,7 +158,14 @@ def register():
         from extensions import db
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
-            flash('Email is already registered.', 'danger')
+            if existing_user.status == 'pending':
+                flash(
+                    'This email is already registered but not yet verified. '
+                    'Please check your email for the OTP or request a new code.',
+                    'danger',
+                )
+            else:
+                flash('Email is already registered.', 'danger')
             return _render_register_form(form)
 
         new_user = User(
@@ -136,15 +174,88 @@ def register():
             contact_number=contact_number,
             barangay=barangay,
             municipality=municipality,
-            password_hash=generate_password_hash(password)
+            password_hash=generate_password_hash(password),
+            status='pending',
         )
         db.session.add(new_user)
         db.session.commit()
 
-        flash('Account created successfully! Please log in.', 'success')
-        return redirect(url_for('user.user_login'))
+        verification = _create_email_verification(new_user)
+        sent = _send_account_verification_email(new_user, verification.otp_code)
+
+        if sent:
+            flash(
+                'Account created successfully! An OTP has been sent to your email. '
+                'Please verify your account to continue.',
+                'success',
+            )
+        else:
+            flash(
+                'Account created successfully, but we could not send the verification email. '
+                'Please contact support or try registering again later.',
+                'warning',
+            )
+
+        return redirect(url_for('user.verify_account', user_id=new_user.id))
 
     return _render_register_form()
+
+
+@user_bp.route('/verify/<int:user_id>', methods=['GET', 'POST'])
+def verify_account(user_id):
+    from extensions import db
+    from models import EmailVerification, User
+
+    user = User.query.get_or_404(user_id)
+    if user.status == 'active':
+        flash('Your account is already verified. Please log in.', 'info')
+        return redirect(url_for('user.user_login'))
+
+    if request.method == 'POST':
+        otp = request.form.get('otp', '').strip()
+        if not otp:
+            flash('Please enter the OTP sent to your email.', 'danger')
+            return render_template('user/verify_account.html', user=user)
+
+        verification = EmailVerification.query.filter_by(
+            user_id=user.id,
+            otp_code=otp,
+            is_used=False,
+        ).order_by(EmailVerification.created_at.desc()).first()
+
+        if not verification or verification.expires_at < datetime.utcnow():
+            flash('The OTP is invalid or has expired. Please request a new code.', 'danger')
+            return render_template('user/verify_account.html', user=user)
+
+        verification.is_used = True
+        user.status = 'active'
+        db.session.commit()
+
+        flash('Your account has been verified! Please log in.', 'success')
+        return redirect(url_for('user.user_login'))
+
+    return render_template('user/verify_account.html', user=user)
+
+
+@user_bp.route('/verify/<int:user_id>/resend', methods=['POST'])
+def resend_verification_otp(user_id):
+    from models import User
+
+    user = User.query.get_or_404(user_id)
+    if user.status == 'active':
+        flash('Your account is already verified. Please log in.', 'info')
+        return redirect(url_for('user.user_login'))
+
+    verification = _create_email_verification(user)
+    sent = _send_account_verification_email(user, verification.otp_code)
+    if sent:
+        flash('A new OTP has been sent to your email address.', 'success')
+    else:
+        flash(
+            'Unable to send a new OTP right now. Please try again later or contact support.',
+            'warning',
+        )
+    return redirect(url_for('user.verify_account', user_id=user.id))
 
 
 @user_bp.route('/login', methods=['GET', 'POST'])
@@ -162,6 +273,13 @@ def user_login():
 
         if not user or not check_password_hash(user.password_hash, password):
             flash('Invalid credentials. Please try again.', 'danger')
+            return render_template('user/login.html')
+
+        if user.status == 'pending':
+            flash(
+                'Your account is not yet verified. Please check your email for the OTP ',
+                'danger',
+            )
             return render_template('user/login.html')
 
         if user.status == 'suspended':

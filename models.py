@@ -21,6 +21,18 @@ class User(db.Model, UserMixin):
     inapp_notif = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     complaints = db.relationship('Complaint', backref='complainant', lazy=True)
+    email_verifications = db.relationship('EmailVerification', backref='user', lazy=True)
+
+
+class EmailVerification(db.Model):
+    __tablename__ = 'email_verifications'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    otp_code = db.Column(db.String(10), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    is_used = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 class AdminUser(db.Model, UserMixin):

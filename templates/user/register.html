@@ -40,66 +40,7 @@
             color: #6c757d;
         }
         .toggle-pw:hover { background: #e9ecef; }
-<<<<<<< Updated upstream
-        .pw-req-list {
-            list-style: none;
-            padding: 0;
-            margin: 8px 0 0;
-            font-size: 12px;
-        }
-        .pw-req-list li {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 4px;
-            color: #6c757d;
-        }
-        .pw-req-list li.met {
-            color: #2D6A4F;
-        }
-        .pw-req-list li i {
-            font-size: 14px;
-            flex-shrink: 0;
-        }
-        .pw-req-list li:not(.met) i {
-            color: #adb5bd;
-        }
-        .pw-req-list li.met i {
-            color: #2D6A4F;
-=======
-
-        /* Password strength indicator */
-        .pw-strength-bar {
-            height: 4px;
-            border-radius: 2px;
-            transition: all 0.3s;
-            background: #e0e0e0;
-            margin-top: 6px;
-        }
-        .pw-strength-bar.weak { background: #dc3545; width: 25%; }
-        .pw-strength-bar.fair { background: #fd7e14; width: 50%; }
-        .pw-strength-bar.good { background: #ffc107; width: 75%; }
-        .pw-strength-bar.strong { background: #198754; width: 100%; }
-
-        /* Password rules checklist */
-        .pw-rules { font-size: 11px; margin-top: 6px; }
-        .pw-rule {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            color: #6c757d;
-            margin-bottom: 2px;
-        }
-        .pw-rule.valid { color: #198754; }
-        .pw-rule.invalid { color: #dc3545; }
-        .pw-rule i { font-size: 10px; }
-
-        /* Contact number validation */
-        .contact-feedback {
-            font-size: 11px;
-            margin-top: 4px;
->>>>>>> Stashed changes
-        }
+        .form-text small { color: #6c757d; }
     </style>
 </head>
 <body>
@@ -120,163 +61,68 @@
         {% endif %}
     {% endwith %}
 
-<<<<<<< Updated upstream
-    <form method="POST" action="{{ url_for('user.register') }}" id="register-form" novalidate
-          onsubmit="return validateRegisterForm()">
-        <div class="mb-2">
-            <label class="form-label small fw-semibold">Full Name</label>
-            <input type="text" name="full_name" class="form-control"
-                   placeholder="Juan dela Cruz" required
-                   value="{{ f.get('full_name', '') }}">
-=======
-    <form method="POST" action="{{ url_for('user.register') }}" id="registerForm">
-
-        <div class="mb-2">
+    <form method="POST" action="{{ url_for('user.register') }}">
+        <div class="mb-3">
             <label class="form-label small fw-semibold">Full Name</label>
             <input type="text" name="full_name" class="form-control"
                    placeholder="Juan dela Cruz"
-                   value="{{ form_data.full_name if form_data else '' }}" required>
->>>>>>> Stashed changes
+                   value="{{ f.get('full_name', '') }}" required>
         </div>
 
-        <div class="mb-2">
+        <div class="mb-3">
             <label class="form-label small fw-semibold">Email Address</label>
             <input type="email" name="email" class="form-control"
-<<<<<<< Updated upstream
-                   placeholder="juan@email.com" required
-                   value="{{ f.get('email', '') }}">
-=======
                    placeholder="juan@email.com"
-                   value="{{ form_data.email if form_data else '' }}" required>
->>>>>>> Stashed changes
+                   value="{{ f.get('email', '') }}" required>
         </div>
 
         <!-- Contact Number with live validation -->
-        <div class="mb-2">
+        <div class="mb-3">
             <label class="form-label small fw-semibold">Contact Number</label>
-<<<<<<< Updated upstream
             <input type="text" name="contact_number" id="contact_number" class="form-control"
-                   placeholder="09xxxxxxxxx" inputmode="numeric" maxlength="11"
-                   pattern="[0-9]{11}" required
-                   value="{{ f.get('contact_number', '') }}">
-            <div class="form-text">Numbers only, exactly 11 digits (e.g. 09171234567).</div>
-=======
-            <input type="text" name="contact_number" id="contact_number"
-                   class="form-control"
-                   placeholder="09xxxxxxxxx"
-                   maxlength="11"
-                   value="{{ form_data.contact_number if form_data else '' }}"
-                   oninput="validateContact()" required>
-            <div class="contact-feedback" id="contact-feedback"></div>
-            <div class="form-text">Must be exactly 11 digits starting with 09</div>
->>>>>>> Stashed changes
+                   placeholder="09xxxxxxxxx" maxlength="11"
+                   value="{{ f.get('contact_number', '') }}"
+                   oninput="this.value = this.value.replace(/\D/g, '').slice(0, 11);" required>
+            <div class="form-text">Enter exactly 11 digits, starting with 09.</div>
         </div>
 
         <div class="row mb-2">
             <div class="col">
                 <label class="form-label small fw-semibold">Barangay</label>
                 <input type="text" name="barangay" class="form-control"
-<<<<<<< Updated upstream
-                       placeholder="Tondo" required
-                       value="{{ f.get('barangay', '') }}">
-=======
                        placeholder="Tondo"
-                       value="{{ form_data.barangay if form_data else '' }}" required>
->>>>>>> Stashed changes
+                       value="{{ f.get('barangay', '') }}" required>
             </div>
             <div class="col">
                 <label class="form-label small fw-semibold">Municipality</label>
                 <input type="text" name="municipality" class="form-control"
-<<<<<<< Updated upstream
-                       placeholder="Manila" required
-                       value="{{ f.get('municipality', '') }}">
-            </div>
-        </div>
-
-=======
                        placeholder="Manila"
-                       value="{{ form_data.municipality if form_data else '' }}" required>
+                       value="{{ f.get('municipality', '') }}" required>
             </div>
         </div>
 
-        <!-- Password with eye toggle and strength indicator -->
->>>>>>> Stashed changes
-        <div class="mb-2">
+        <div class="mb-3">
             <label class="form-label small fw-semibold">Password</label>
             <div class="d-flex">
                 <input type="password" name="password" id="password"
                        class="form-control" style="border-radius: 6px 0 0 6px;"
-<<<<<<< Updated upstream
-                       placeholder="Create a strong password" required
-                       value="{{ f.get('password', '') }}"
-                       oninput="updatePasswordRequirements()">
+                       placeholder="Create a strong password" required>
                 <button type="button" class="toggle-pw" onclick="togglePw('password', 'eye1')">
                     <i id="eye1" class="bi bi-eye"></i>
                 </button>
             </div>
-            <ul class="pw-req-list" id="pw-req-list" aria-live="polite">
-                <li id="req-len"><i class="bi bi-circle"></i> At least 8 characters</li>
-                <li id="req-upper"><i class="bi bi-circle"></i> At least one uppercase letter (A–Z)</li>
-                <li id="req-lower"><i class="bi bi-circle"></i> At least one lowercase letter (a–z)</li>
-                <li id="req-digit"><i class="bi bi-circle"></i> At least one number (0–9)</li>
-                <li id="req-special"><i class="bi bi-circle"></i> At least one special character (!@#$%^&* etc.)</li>
-            </ul>
         </div>
 
-=======
-                       placeholder="Create a strong password"
-                       oninput="checkPasswordStrength()" required>
-                <button type="button" class="toggle-pw"
-                        onclick="togglePw('password', 'eye1')">
-                    <i id="eye1" class="bi bi-eye"></i>
-                </button>
-            </div>
-
-            <!-- Strength bar -->
-            <div class="pw-strength-bar" id="strength-bar"></div>
-            <div id="strength-label" class="form-text"></div>
-
-            <!-- Password rules checklist -->
-            <div class="pw-rules mt-2">
-                <div class="pw-rule" id="rule-length">
-                    <i class="bi bi-x-circle-fill"></i> At least 8 characters
-                </div>
-                <div class="pw-rule" id="rule-upper">
-                    <i class="bi bi-x-circle-fill"></i> At least one uppercase letter (A-Z)
-                </div>
-                <div class="pw-rule" id="rule-lower">
-                    <i class="bi bi-x-circle-fill"></i> At least one lowercase letter (a-z)
-                </div>
-                <div class="pw-rule" id="rule-number">
-                    <i class="bi bi-x-circle-fill"></i> At least one number (0-9)
-                </div>
-                <div class="pw-rule" id="rule-special">
-                    <i class="bi bi-x-circle-fill"></i> At least one special character (!@#$%^&*)
-                </div>
-            </div>
-        </div>
-
-        <!-- Confirm Password -->
->>>>>>> Stashed changes
         <div class="mb-3">
             <label class="form-label small fw-semibold">Confirm Password</label>
             <div class="d-flex">
                 <input type="password" name="confirm_password" id="confirm_password"
                        class="form-control" style="border-radius: 6px 0 0 6px;"
-<<<<<<< Updated upstream
-                       placeholder="Re-enter your password" required
-                       value="{{ f.get('confirm_password', '') }}">
-                <button type="button" class="toggle-pw" onclick="togglePw('confirm_password', 'eye2')">
-=======
-                       placeholder="Re-enter your password"
-                       oninput="checkConfirmPassword()" required>
-                <button type="button" class="toggle-pw"
-                        onclick="togglePw('confirm_password', 'eye2')">
->>>>>>> Stashed changes
+                       placeholder="Re-enter your password" required>
+                <button type="button" class="toggle-pw" onclick="togglePw('confirm_password','eye2')">
                     <i id="eye2" class="bi bi-eye"></i>
                 </button>
             </div>
-            <div class="form-text" id="confirm-feedback"></div>
         </div>
 
         <div class="d-grid mb-3">
@@ -296,40 +142,11 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-<<<<<<< Updated upstream
-    const PW_RULES = {
-        'req-len': function(p) { return p.length >= 8; },
-        'req-upper': function(p) { return /[A-Z]/.test(p); },
-        'req-lower': function(p) { return /[a-z]/.test(p); },
-        'req-digit': function(p) { return /[0-9]/.test(p); },
-        'req-special': function(p) { return /[!@#$%^&*(),.?":{}|<>]/.test(p); },
-    };
-
-    function setReqState(el, met) {
-        el.classList.toggle('met', met);
-        const icon = el.querySelector('i');
-        icon.className = met ? 'bi bi-check-circle-fill' : 'bi bi-circle';
-    }
-
-    function updatePasswordRequirements() {
-        const pw = document.getElementById('password').value;
-        for (const [id, test] of Object.entries(PW_RULES)) {
-            setReqState(document.getElementById(id), test(pw));
-        }
-    }
-
-    function passwordMeetsAllRules(pw) {
-        return Object.values(PW_RULES).every(function(test) { return test(pw); });
-    }
-
     function sanitizeContactNumber() {
         const field = document.getElementById('contact_number');
         field.value = field.value.replace(/\D/g, '').slice(0, 11);
     }
 
-=======
-    // ── Show/Hide Password ──
->>>>>>> Stashed changes
     function togglePw(fieldId, iconId) {
         const field = document.getElementById(fieldId);
         const icon = document.getElementById(iconId);
@@ -344,132 +161,32 @@
         }
     }
 
-<<<<<<< Updated upstream
-    function validateRegisterForm() {
-        sanitizeContactNumber();
-        const contact = document.getElementById('contact_number').value.trim();
-        const password = document.getElementById('password').value;
-        const confirm = document.getElementById('confirm_password').value;
+    document.getElementById('contact_number').addEventListener('input', sanitizeContactNumber);
 
-        if (!/^\d{11}$/.test(contact)) {
-            alert('Contact number must contain numbers only and be exactly 11 digits.');
-            return false;
+    function passwordMeetsAllRules(pw) {
+        return Object.values(PW_RULES).every(function(test) { return test(pw); });
+    }
+
+    function sanitizeContactNumber() {
+        const field = document.getElementById('contact_number');
+        field.value = field.value.replace(/\D/g, '').slice(0, 11);
+    }
+
+    function togglePw(fieldId, iconId) {
+        const field = document.getElementById(fieldId);
+        const icon = document.getElementById(iconId);
+        if (field.type === 'password') {
+            field.type = 'text';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        } else {
+            field.type = 'password';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
         }
-        if (!passwordMeetsAllRules(password)) {
-            alert('Please meet all password requirements before registering.');
-            return false;
-        }
-        if (password !== confirm) {
-            alert('Passwords do not match.');
-            return false;
-        }
-        return true;
     }
 
     document.getElementById('contact_number').addEventListener('input', sanitizeContactNumber);
-
-    document.addEventListener('DOMContentLoaded', function() {
-        sanitizeContactNumber();
-        updatePasswordRequirements();
-    });
-=======
-    // ── Contact Number Validation ──
-    function validateContact() {
-        const val = document.getElementById('contact_number').value;
-        const feedback = document.getElementById('contact-feedback');
-
-        // Only allow digits
-        document.getElementById('contact_number').value = val.replace(/\D/g, '');
-        const cleaned = document.getElementById('contact_number').value;
-
-        if (cleaned.length === 0) {
-            feedback.textContent = '';
-        } else if (!cleaned.startsWith('09')) {
-            feedback.textContent = '❌ Must start with 09';
-            feedback.style.color = '#dc3545';
-        } else if (cleaned.length < 11) {
-            feedback.textContent = `⏳ ${cleaned.length}/11 digits entered`;
-            feedback.style.color = '#fd7e14';
-        } else if (cleaned.length === 11) {
-            feedback.textContent = '✅ Valid contact number';
-            feedback.style.color = '#198754';
-        }
-    }
-
-    // ── Password Strength Checker ──
-    function checkPasswordStrength() {
-        const pw = document.getElementById('password').value;
-        const bar = document.getElementById('strength-bar');
-        const label = document.getElementById('strength-label');
-
-        const rules = {
-            length:  pw.length >= 8,
-            upper:   /[A-Z]/.test(pw),
-            lower:   /[a-z]/.test(pw),
-            number:  /[0-9]/.test(pw),
-            special: /[!@#$%^&*(),.?":{}|<>]/.test(pw),
-        };
-
-        // Update rule checklist
-        setRule('rule-length',  rules.length,  'At least 8 characters');
-        setRule('rule-upper',   rules.upper,   'At least one uppercase letter (A-Z)');
-        setRule('rule-lower',   rules.lower,   'At least one lowercase letter (a-z)');
-        setRule('rule-number',  rules.number,  'At least one number (0-9)');
-        setRule('rule-special', rules.special, 'At least one special character (!@#$%^&*)');
-
-        // Strength score
-        const score = Object.values(rules).filter(Boolean).length;
-        bar.className = 'pw-strength-bar';
-
-        if (pw.length === 0) {
-            bar.style.width = '0';
-            label.textContent = '';
-        } else if (score <= 2) {
-            bar.classList.add('weak');
-            label.textContent = '🔴 Weak password';
-            label.style.color = '#dc3545';
-        } else if (score === 3) {
-            bar.classList.add('fair');
-            label.textContent = '🟠 Fair password';
-            label.style.color = '#fd7e14';
-        } else if (score === 4) {
-            bar.classList.add('good');
-            label.textContent = '🟡 Good password';
-            label.style.color = '#ffc107';
-        } else {
-            bar.classList.add('strong');
-            label.textContent = '🟢 Strong password';
-            label.style.color = '#198754';
-        }
-
-        checkConfirmPassword();
-    }
-
-    function setRule(id, isValid, text) {
-        const el = document.getElementById(id);
-        el.className = 'pw-rule ' + (isValid ? 'valid' : 'invalid');
-        el.innerHTML = `<i class="bi bi-${isValid ? 'check-circle-fill' : 'x-circle-fill'}"></i> ${text}`;
-    }
-
-    // ── Confirm Password Match ──
-    function checkConfirmPassword() {
-        const pw = document.getElementById('password').value;
-        const cpw = document.getElementById('confirm_password').value;
-        const feedback = document.getElementById('confirm-feedback');
-
-        if (cpw.length === 0) {
-            feedback.textContent = '';
-            return;
-        }
-        if (pw === cpw) {
-            feedback.textContent = '✅ Passwords match';
-            feedback.style.color = '#198754';
-        } else {
-            feedback.textContent = '❌ Passwords do not match';
-            feedback.style.color = '#dc3545';
-        }
-    }
->>>>>>> Stashed changes
 </script>
 </body>
 </html>
