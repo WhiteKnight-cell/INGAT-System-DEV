@@ -41,6 +41,31 @@
         }
         .toggle-pw:hover { background: #e9ecef; }
         .form-text small { color: #6c757d; }
+        .pw-strength-bar {
+            height: 6px;
+            border-radius: 4px;
+            background: #e9ecef;
+            transition: width 0.3s ease, background 0.3s ease;
+            margin-top: 8px;
+        }
+        .pw-strength-bar.fill-1 { width: 20%; background: #dc3545; }
+        .pw-strength-bar.fill-2 { width: 40%; background: #fd7e14; }
+        .pw-strength-bar.fill-3 { width: 60%; background: #ffc107; }
+        .pw-strength-bar.fill-4 { width: 80%; background: #198754; }
+        .pw-strength-bar.fill-5 { width: 100%; background: #0f5132; }
+        .pw-rules {
+            font-size: 12px;
+            margin-top: 10px;
+            color: #6c757d;
+        }
+        .pw-rule {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        .pw-rule.valid { color: #198754; }
+        .pw-rule.invalid { color: #dc3545; }
     </style>
 </head>
 <body>
@@ -111,6 +136,17 @@
                     <i id="eye1" class="bi bi-eye"></i>
                 </button>
             </div>
+            <div class="form-text">
+                Use at least 8 characters including uppercase, lowercase, number, and special character.
+            </div>
+            <div class="pw-strength-bar" id="pw-strength-bar"></div>
+            <div class="pw-rules" id="pw-rules">
+                <div class="pw-rule invalid" id="rule-length"><i class="bi bi-x-circle-fill"></i> At least 8 characters</div>
+                <div class="pw-rule invalid" id="rule-upper"><i class="bi bi-x-circle-fill"></i> At least one uppercase letter</div>
+                <div class="pw-rule invalid" id="rule-lower"><i class="bi bi-x-circle-fill"></i> At least one lowercase letter</div>
+                <div class="pw-rule invalid" id="rule-number"><i class="bi bi-x-circle-fill"></i> At least one number</div>
+                <div class="pw-rule invalid" id="rule-special"><i class="bi bi-x-circle-fill"></i> At least one special character</div>
+            </div>
         </div>
 
         <div class="mb-3">
@@ -123,6 +159,7 @@
                     <i id="eye2" class="bi bi-eye"></i>
                 </button>
             </div>
+            <div class="form-text" id="confirm-feedback"></div>
         </div>
 
         <div class="d-grid mb-3">
@@ -161,32 +198,59 @@
         }
     }
 
-    document.getElementById('contact_number').addEventListener('input', sanitizeContactNumber);
-
-    function passwordMeetsAllRules(pw) {
-        return Object.values(PW_RULES).every(function(test) { return test(pw); });
+    function setRuleState(id, valid) {
+        const el = document.getElementById(id);
+        const icon = el.querySelector('i');
+        el.classList.toggle('valid', valid);
+        el.classList.toggle('invalid', !valid);
+        icon.className = valid ? 'bi bi-check-circle-fill' : 'bi bi-x-circle-fill';
     }
 
-    function sanitizeContactNumber() {
-        const field = document.getElementById('contact_number');
-        field.value = field.value.replace(/\D/g, '').slice(0, 11);
+    function updatePasswordGuidelines() {
+        const pw = document.getElementById('password').value;
+        const lengthValid = pw.length >= 8;
+        const upperValid = /[A-Z]/.test(pw);
+        const lowerValid = /[a-z]/.test(pw);
+        const numberValid = /[0-9]/.test(pw);
+        const specialValid = /[!@#$%^&*(),.?":{}|<>]/.test(pw);
+
+        setRuleState('rule-length', lengthValid);
+        setRuleState('rule-upper', upperValid);
+        setRuleState('rule-lower', lowerValid);
+        setRuleState('rule-number', numberValid);
+        setRuleState('rule-special', specialValid);
+
+        const score = [lengthValid, upperValid, lowerValid, numberValid, specialValid].filter(Boolean).length;
+        const bar = document.getElementById('pw-strength-bar');
+        bar.className = 'pw-strength-bar';
+        if (score > 0) {
+            bar.classList.add('fill-' + score);
+        }
+
+        checkConfirmPassword();
     }
 
-    function togglePw(fieldId, iconId) {
-        const field = document.getElementById(fieldId);
-        const icon = document.getElementById(iconId);
-        if (field.type === 'password') {
-            field.type = 'text';
-            icon.classList.remove('bi-eye');
-            icon.classList.add('bi-eye-slash');
+    function checkConfirmPassword() {
+        const pw = document.getElementById('password').value;
+        const confirm = document.getElementById('confirm_password').value;
+        const feedback = document.getElementById('confirm-feedback');
+
+        if (!confirm) {
+            feedback.textContent = '';
+            return;
+        }
+        if (pw === confirm) {
+            feedback.textContent = 'Passwords match';
+            feedback.style.color = '#198754';
         } else {
-            field.type = 'password';
-            icon.classList.remove('bi-eye-slash');
-            icon.classList.add('bi-eye');
+            feedback.textContent = 'Passwords do not match';
+            feedback.style.color = '#dc3545';
         }
     }
 
     document.getElementById('contact_number').addEventListener('input', sanitizeContactNumber);
+    document.getElementById('password').addEventListener('input', updatePasswordGuidelines);
+    document.getElementById('confirm_password').addEventListener('input', checkConfirmPassword);
 </script>
 </body>
 </html>
