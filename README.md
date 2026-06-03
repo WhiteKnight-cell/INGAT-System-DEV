@@ -29,11 +29,21 @@ Default agencies (DENR, LLDA, LGU) are seeded automatically on first run.
 
 Copy `.env.example` to `.env` and set `GEMINI_API_KEY` from [Google AI Studio](https://aistudio.google.com/apikey) for AI complaint letters (Sprint 3).
 
-Dependencies notes:
-- This project uses `passlib[bcrypt]` for password hashing (bcrypt) and compatibility with legacy PBKDF2 hashes. Ensure you install dependencies with:
+Password hashing and dependencies:
+- This project uses `passlib`'s CryptContext with `pbkdf2_sha256` as the primary hashing scheme in development to avoid platform-specific bcrypt backend issues.
+- The application supports verification of legacy Werkzeug `scrypt` / `pbkdf2:sha256` hashes and will re-hash them to the current scheme on first successful login (rehash-on-login). The centralized helpers in `utils.py` (`hash_password`, `verify_password`, `is_bcrypt_hash`) manage hashing and verification.
+- If you prefer `bcrypt` in production, install `bcrypt` and `passlib[bcrypt]`, ensure the target environment has a compatible `bcrypt` backend, and be aware of bcrypt's 72-byte input limitation.
+
+Environment variables (copy `.env.example` -> `.env`):
+- `GMAIL_USER` — SMTP account email used to send verification/reset emails.
+- `GMAIL_APP_PASSWORD` — app password or SMTP password for `GMAIL_USER`.
+- `MAIL_DEBUG` — set to `1` to enable SMTP debug output during testing.
+- `SECRET_KEY` — Flask secret key used for session and token signing.
+
+Install dependencies and run:
 
 ```powershell
 pip install -r requirements.txt
 ```
 
-The `utils.hash_password()` helper (in `utils.py`) is the recommended way to create password hashes for admin/manual account creation so they are compatible with the app's verification logic.
+Use the `utils.hash_password()` helper when creating admin or manual accounts so stored hashes are compatible with the application's verification logic.
