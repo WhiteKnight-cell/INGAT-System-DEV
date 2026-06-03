@@ -15,6 +15,9 @@ from utils import (
 
 user_bp = Blueprint('user', __name__, url_prefix='/user')
 
+# seconds to wait before allowing resend
+RESEND_COOLDOWN_SECONDS = 60
+
 ALLOWED_VIOLATION_TYPES = [
     'Illegal Dumping',
     'Air Pollution',
@@ -215,7 +218,12 @@ def verify_account(user_id):
         otp = request.form.get('otp', '').strip()
         if not otp:
             flash('Please enter the OTP sent to your email.', 'danger')
-            return render_template('user/verify_account.html', user=user)
+            # compute remaining cooldown for template
+            latest = EmailVerification.query.filter_by(user_id=user.id).order_by(EmailVerification.created_at.desc()).first()
+            remaining = 0
+            if latest:
+                remaining = max(0, int((latest.created_at + timedelta(seconds=RESEND_COOLDOWN_SECONDS) - datetime.utcnow()).total_seconds()))
+            return render_template('user/verify_account.html', user=user, resend_cooldown=remaining)
 
         verification = EmailVerification.query.filter_by(
             user_id=user.id,
@@ -225,7 +233,11 @@ def verify_account(user_id):
 
         if not verification or verification.expires_at < datetime.utcnow():
             flash('The OTP is invalid or has expired. Please request a new code.', 'danger')
-            return render_template('user/verify_account.html', user=user)
+            latest = EmailVerification.query.filter_by(user_id=user.id).order_by(EmailVerification.created_at.desc()).first()
+            remaining = 0
+            if latest:
+                remaining = max(0, int((latest.created_at + timedelta(seconds=RESEND_COOLDOWN_SECONDS) - datetime.utcnow()).total_seconds()))
+            return render_template('user/verify_account.html', user=user, resend_cooldown=remaining)
 
         verification.is_used = True
         user.status = 'active'
@@ -234,7 +246,11 @@ def verify_account(user_id):
         flash('Your account has been verified! Please log in.', 'success')
         return redirect(url_for('user.user_login'))
 
-    return render_template('user/verify_account.html', user=user)
+    latest = EmailVerification.query.filter_by(user_id=user.id).order_by(EmailVerification.created_at.desc()).first()
+    remaining = 0
+    if latest:
+        remaining = max(0, int((latest.created_at + timedelta(seconds=RESEND_COOLDOWN_SECONDS) - datetime.utcnow()).total_seconds()))
+    return render_template('user/verify_account.html', user=user, resend_cooldown=remaining)
 
 
 @user_bp.route('/verify/<int:user_id>/resend', methods=['POST'])
@@ -245,6 +261,14 @@ def resend_verification_otp(user_id):
     if user.status == 'active':
         flash('Your account is already verified. Please log in.', 'info')
         return redirect(url_for('user.user_login'))
+    from models import EmailVerification
+    latest = EmailVerification.query.filter_by(user_id=user.id).order_by(EmailVerification.created_at.desc()).first()
+    if latest:
+        elapsed = (datetime.utcnow() - latest.created_at).total_seconds()
+        if elapsed < RESEND_COOLDOWN_SECONDS:
+            wait = int(RESEND_COOLDOWN_SECONDS - elapsed)
+            flash(f'Please wait {wait} seconds before requesting a new code.', 'warning')
+            return redirect(url_for('user.verify_account', user_id=user.id))
 
     verification = _create_email_verification(user)
     sent = _send_account_verification_email(user, verification.otp_code)
