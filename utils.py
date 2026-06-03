@@ -4,6 +4,7 @@ import string
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from flask import current_app
 from itsdangerous import URLSafeTimedSerializer
@@ -75,3 +76,23 @@ def send_verification_email(to_email, full_name, otp_code):
     <p>If you did not create an account, please ignore this email.</p>
     """
     return send_email(to_email, subject, body)
+
+
+def hash_password(password: str) -> str:
+    """Hash a password using bcrypt (Werkzeug wrapper)."""
+    return generate_password_hash(password, method='bcrypt')
+
+
+def verify_password(stored_hash: str, password: str) -> bool:
+    """Verify a plaintext password against stored hash."""
+    try:
+        return check_password_hash(stored_hash, password)
+    except Exception:
+        return False
+
+
+def is_bcrypt_hash(stored_hash: str) -> bool:
+    """Quick check whether a stored hash uses bcrypt (Werkzeug format)."""
+    if not stored_hash:
+        return False
+    return stored_hash.startswith('bcrypt$') or stored_hash.startswith('bcrypt:')

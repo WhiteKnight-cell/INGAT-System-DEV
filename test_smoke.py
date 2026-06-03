@@ -79,7 +79,7 @@ def run_tests():
         if not admin:
             admin = AdminUser(
                 email="admin@ingat.com",
-                password_hash=generate_password_hash("Admin@1234"),
+                password_hash=generate_password_hash("Admin@1234", method='bcrypt'),
             )
             db.session.add(admin)
             db.session.commit()
@@ -96,7 +96,7 @@ def run_tests():
                 contact_number="09123456789",
                 barangay="Tondo",
                 municipality="Manila",
-                password_hash=generate_password_hash("Test@1234"),
+                password_hash=generate_password_hash("Test@1234", method='bcrypt'),
             )
             db.session.add(test_user)
             db.session.commit()

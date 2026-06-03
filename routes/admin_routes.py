@@ -1,5 +1,5 @@
 from flask import Blueprint, Response, render_template, redirect, url_for, flash, request
-from werkzeug.security import check_password_hash
+from utils import verify_password
 from flask_login import login_user, logout_user
 import csv
 import io
@@ -33,7 +33,7 @@ def admin_login():
         from models import AdminUser
         admin = AdminUser.query.filter_by(email=email).first()
 
-        if not admin or not check_password_hash(admin.password_hash, password):
+        if not admin or not verify_password(admin.password_hash, password):
             flash('Invalid credentials. Please try again.', 'danger')
             return render_template('admin/login.html')
 

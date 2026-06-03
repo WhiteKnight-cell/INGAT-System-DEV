@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, send_file
-from werkzeug.security import generate_password_hash, check_password_hash
+from utils import hash_password, verify_password, is_bcrypt_hash
 from flask_login import login_user, logout_user, current_user
 from datetime import datetime, timedelta
 import re
@@ -177,7 +177,7 @@ def register():
             contact_number=contact_number,
             barangay=barangay,
             municipality=municipality,
-            password_hash=generate_password_hash(password),
+            password_hash=hash_password(password),
             status='pending',
         )
         db.session.add(new_user)
@@ -295,7 +295,7 @@ def user_login():
         from models import User
         user = User.query.filter_by(email=email).first()
 
-        if not user or not check_password_hash(user.password_hash, password):
+        if not user or not verify_password(user.password_hash, password):
             flash('Invalid credentials. Please try again.', 'danger')
             return render_template('user/login.html')
 
@@ -309,6 +309,15 @@ def user_login():
         if user.status == 'suspended':
             flash('Your account has been suspended. Please contact admin.', 'danger')
             return render_template('user/login.html')
+
+        # Re-hash password with bcrypt if stored hash is not bcrypt-based
+        try:
+            if user and not is_bcrypt_hash(user.password_hash):
+                user.password_hash = hash_password(password)
+                from extensions import db
+                db.session.commit()
+        except Exception:
+            pass
 
         login_user(user)
         return redirect(url_for('user.submit_complaint'))
@@ -601,7 +610,7 @@ def reset_password(token):
         from extensions import db
         user = User.query.filter_by(email=email).first()
         if user:
-            user.password_hash = generate_password_hash(password)
+            user.password_hash = hash_password(password)
             db.session.commit()
             flash('Password reset successfully! Please log in.', 'success')
             return redirect(url_for('user.user_login'))
