@@ -5,6 +5,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from werkzeug.security import generate_password_hash, check_password_hash
+from passlib.context import CryptContext
 
 from flask import current_app
 from itsdangerous import URLSafeTimedSerializer
@@ -78,13 +79,27 @@ def send_verification_email(to_email, full_name, otp_code):
     return send_email(to_email, subject, body)
 
 
+# Use passlib CryptContext to support bcrypt and fallback verification of pbkdf2_sha256.
+pwd_context = CryptContext(schemes=["pbkdf2_sha256", "scrypt"], deprecated="auto")
+
+
 def hash_password(password: str) -> str:
-    """Hash a password using bcrypt (Werkzeug wrapper)."""
-    return generate_password_hash(password, method='bcrypt')
+    """Hash a password using bcrypt via passlib CryptContext."""
+    return pwd_context.hash(password)
 
 
 def verify_password(stored_hash: str, password: str) -> bool:
-    """Verify a plaintext password against stored hash."""
+    """Verify a plaintext password against stored hash, supporting multiple schemes."""
+    if not stored_hash:
+        return False
+    try:
+        scheme = pwd_context.identify(stored_hash)
+        if scheme is not None:
+            return pwd_context.verify(password, stored_hash)
+    except Exception:
+        pass
+
+    # Fallback: try Werkzeug's check_password_hash for legacy werkzeug hashes (scrypt, pbkdf2:sha256, etc.)
     try:
         return check_password_hash(stored_hash, password)
     except Exception:
@@ -92,7 +107,11 @@ def verify_password(stored_hash: str, password: str) -> bool:
 
 
 def is_bcrypt_hash(stored_hash: str) -> bool:
-    """Quick check whether a stored hash uses bcrypt (Werkzeug format)."""
+    """Return True if the stored hash uses bcrypt scheme according to passlib."""
     if not stored_hash:
         return False
-    return stored_hash.startswith('bcrypt$') or stored_hash.startswith('bcrypt:')
+    try:
+        scheme = pwd_context.identify(stored_hash)
+        return scheme in ('bcrypt', 'bcrypt_sha256')
+    except Exception:
+        return False

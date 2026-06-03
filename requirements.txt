@@ -9,3 +9,4 @@ python-docx
 openpyxl
 pillow
 bcrypt
+passlib[bcrypt]

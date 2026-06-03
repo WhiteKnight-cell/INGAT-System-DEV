@@ -5,7 +5,7 @@ import uuid
 from app import app
 from extensions import db
 from models import AdminUser, Agency, Complaint, User
-from werkzeug.security import generate_password_hash
+from utils import hash_password
 
 
 def run_tests():
@@ -79,7 +79,7 @@ def run_tests():
         if not admin:
             admin = AdminUser(
                 email="admin@ingat.com",
-                password_hash=generate_password_hash("Admin@1234", method='bcrypt'),
+                password_hash=hash_password("Admin@1234"),
             )
             db.session.add(admin)
             db.session.commit()
@@ -96,7 +96,7 @@ def run_tests():
                 contact_number="09123456789",
                 barangay="Tondo",
                 municipality="Manila",
-                password_hash=generate_password_hash("Test@1234", method='bcrypt'),
+                password_hash=hash_password("Test@1234"),
             )
             db.session.add(test_user)
             db.session.commit()
@@ -265,7 +265,7 @@ def run_tests():
                 contact_number="09111111111",
                 barangay="Quiapo",
                 municipality="Manila",
-                password_hash=generate_password_hash("Test@1234"),
+                password_hash=hash_password("Test@1234"),
             )
             db.session.add(other_user)
             db.session.commit()

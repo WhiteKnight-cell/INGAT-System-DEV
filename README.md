@@ -22,9 +22,18 @@ python app.py
 Create the first admin account (one time):
 
 ```bash
-python -c "from app import app; from extensions import db; from models import AdminUser; from werkzeug.security import generate_password_hash; app.app_context().push(); db.session.add(AdminUser(email='admin@ingat.com', password_hash=generate_password_hash('Admin@1234', method='bcrypt'))); db.session.commit(); print('Admin created')"
+python -c "from app import app; from extensions import db; from models import AdminUser; from utils import hash_password; app.app_context().push(); db.session.add(AdminUser(email='admin@ingat.com', password_hash=hash_password('Admin@1234'))); db.session.commit(); print('Admin created')"
 ```
 
 Default agencies (DENR, LLDA, LGU) are seeded automatically on first run.
 
 Copy `.env.example` to `.env` and set `GEMINI_API_KEY` from [Google AI Studio](https://aistudio.google.com/apikey) for AI complaint letters (Sprint 3).
+
+Dependencies notes:
+- This project uses `passlib[bcrypt]` for password hashing (bcrypt) and compatibility with legacy PBKDF2 hashes. Ensure you install dependencies with:
+
+```powershell
+pip install -r requirements.txt
+```
+
+The `utils.hash_password()` helper (in `utils.py`) is the recommended way to create password hashes for admin/manual account creation so they are compatible with the app's verification logic.
