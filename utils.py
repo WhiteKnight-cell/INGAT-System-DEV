@@ -11,6 +11,11 @@ from itsdangerous import URLSafeTimedSerializer
 
 def send_email(to_email, subject, body):
     try:
+        # allow overriding SMTP settings via env
+        mail_server = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
+        mail_port = int(os.getenv('MAIL_PORT', '587'))
+        mail_debug = os.getenv('MAIL_DEBUG', '0') == '1'
+
         gmail_user = os.getenv('GMAIL_USER')
         gmail_password = os.getenv('GMAIL_APP_PASSWORD')
         if not gmail_user or not gmail_password:
@@ -23,14 +28,22 @@ def send_email(to_email, subject, body):
         msg['Subject'] = subject
         msg.attach(MIMEText(body, 'html'))
 
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
+        server = smtplib.SMTP(mail_server, mail_port, timeout=20)
+        if mail_debug:
+            server.set_debuglevel(1)
+        # start TLS if using common ports
+        try:
+            server.starttls()
+        except Exception:
+            pass
         server.login(gmail_user, gmail_password)
         server.send_message(msg)
         server.quit()
         return True
     except Exception as e:
-        print(f'Email error: {e}')
+        import traceback
+        print('Email error:')
+        traceback.print_exc()
         return False
 
 
