@@ -149,7 +149,7 @@
 
     {% if complaint.letter_generated and complaint.generated_letter %}
     <div class="card p-4 mb-3">
-        <div class="section-title">Formal Complaint Letter</div>
+        <div class="section-title"><i class="bi bi-file-earmark-text me-1"></i> AI-Generated Letter</div>
         <div class="letter-preview mb-3">{{ complaint.generated_letter }}</div>
         <div class="d-flex flex-wrap gap-2">
             <a href="{{ url_for('user.download_letter_pdf', complaint_id=complaint.id) }}"
