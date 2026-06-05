@@ -87,16 +87,18 @@ def _filtered_complaints_query():
 @admin_bp.route('/reports')
 @admin_required
 def manage_reports():
-    complaints = _filtered_complaints_query().all()
+    page = request.args.get('page', 1, type=int)
+    paginated = _filtered_complaints_query().paginate(page=page, per_page=10, error_out=False)
     return render_template(
         'admin/manage_reports.html',
-        complaints=complaints,
+        complaints=paginated.items,
         search=request.args.get('q', '').strip(),
         status_filter=request.args.get('status', '').strip(),
         violation_filter=request.args.get('violation_type', '').strip(),
         sort=request.args.get('sort', 'newest').strip(),
         statuses=STATUS_OPTIONS,
         violation_types=VIOLATION_TYPES,
+        pagination=paginated,
     )
 
 
