@@ -76,7 +76,19 @@
     </div>
 
     <div class="section-card">
-        <div class="section-title">AI-Generated Letter</div>
+        <div class="section-title d-flex align-items-center justify-content-between">
+            <span>AI-Generated Letter</span>
+            {% if complaint.letter_generated and complaint.generated_letter %}
+            <div class="d-flex gap-2">
+                <a class="btn btn-outline-success btn-sm" href="{{ url_for('admin.download_letter_pdf', complaint_id=complaint.id) }}">
+                    <i class="bi bi-file-earmark-pdf"></i> Download PDF
+                </a>
+                <a class="btn btn-outline-primary btn-sm" href="{{ url_for('admin.download_letter_docx', complaint_id=complaint.id) }}">
+                    <i class="bi bi-file-earmark-word"></i> Download DOCX
+                </a>
+            </div>
+            {% endif %}
+        </div>
         {% if complaint.letter_generated and complaint.generated_letter %}
             <div class="letter-preview">{{ complaint.generated_letter }}</div>
         {% else %}
@@ -85,7 +97,26 @@
     </div>
 
     <div class="section-card">
-        <div class="section-title">Status History</div>
+        <div class="section-title">Google Maps</div>
+        <p class="small text-muted mb-2">Exact Reported Address (Admin Only): <strong>{{ complaint.street_address }}, {{ complaint.barangay }}, {{ complaint.municipality }}</strong></p>
+
+        {# Important: do NOT put street address into the iframe URL #}
+        <iframe
+            style="width: 100%; height: 320px; border: 0; border-radius: 12px;"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            src="https://www.google.com/maps?q={{ complaint.barangay|urlencode }},{{ complaint.municipality|urlencode }}&output=embed">
+        </iframe>
+    </div>
+
+    <div class="section-card">
+        <div class="section-title d-flex align-items-center justify-content-between">
+            <span>Status History</span>
+            <button class="btn btn-ingat btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#updateStatusModal">
+                <i class="bi bi-pencil-square"></i> Update Status
+            </button>
+        </div>
+
         {% if status_history %}
             {% for entry in status_history %}
             <div class="timeline-item">
@@ -101,5 +132,51 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Update Status Modal -->
+<div class="modal fade" id="updateStatusModal" tabindex="-1" aria-labelledby="updateStatusModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateStatusModalLabel">Update Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="small text-muted">Current Status</div>
+                    <div class="fw-semibold">{{ complaint.status }}</div>
+                </div>
+
+                <form method="POST" action="{{ url_for('admin.update_status', complaint_id=complaint.id) }}" id="updateStatusForm">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">New Status</label>
+                        <select class="form-select" name="new_status" required>
+                            {% for s in status_options %}
+                                <option value="{{ s }}" {% if s == complaint.status %}selected{% endif %}>{{ s }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Remarks</label>
+                        <textarea class="form-control" name="remarks" rows="4" placeholder="Enter remarks..." required></textarea>
+                    </div>
+
+                    <div class="text-muted small">Remarks are required to save the status.</div>
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-ingat">
+                            <i class="bi bi-check2-circle"></i> Save
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+

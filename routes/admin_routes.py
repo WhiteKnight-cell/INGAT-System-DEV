@@ -1,11 +1,12 @@
-from flask import Blueprint, Response, render_template, redirect, url_for, flash, request
-from utils import verify_password
+from flask import Blueprint, Response, render_template, redirect, url_for, flash, request, send_file
+from utils import verify_password, send_email
 from flask_login import login_user, logout_user
 import csv
 import io
 from sqlalchemy import or_
 
 from routes.auth import admin_required
+
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -146,11 +147,131 @@ def report_detail(complaint_id):
         key=lambda entry: entry.updated_at,
         reverse=True,
     )
+
     return render_template(
         'admin/report_detail.html',
         complaint=complaint,
         status_history=status_history,
+        status_options=STATUS_OPTIONS,
     )
+
+
+@admin_bp.route('/reports/<int:complaint_id>/download/pdf')
+@admin_required
+def download_letter_pdf(complaint_id):
+    from extensions import db
+    from models import Complaint
+    from services.letter_export import build_letter_pdf
+
+    complaint = Complaint.query.get_or_404(complaint_id)
+    if not (complaint.letter_generated and complaint.generated_letter):
+        flash('No generated letter is available for this complaint.', 'warning')
+        return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
+
+    pdf_buffer = build_letter_pdf(complaint.generated_letter, complaint.id)
+    filename = f'INGAT_Complaint_{complaint.id:04d}.pdf'
+    # return BytesIO buffer
+    return send_file(
+        pdf_buffer,
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=filename,
+    )
+
+
+
+@admin_bp.route('/reports/<int:complaint_id>/download/docx')
+@admin_required
+def download_letter_docx(complaint_id):
+    from models import Complaint
+    from services.letter_export import build_letter_docx
+
+    complaint = Complaint.query.get_or_404(complaint_id)
+    if not (complaint.letter_generated and complaint.generated_letter):
+        flash('No generated letter is available for this complaint.', 'warning')
+        return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
+
+    docx_buffer = build_letter_docx(complaint.generated_letter, complaint.id)
+    filename = f'INGAT_Complaint_{complaint.id:04d}.docx'
+    return __import__('flask').send_file(
+        docx_buffer,
+        mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        as_attachment=True,
+        download_name=filename,
+    )
+
+
+@admin_bp.route('/reports/<int:complaint_id>/update-status', methods=['POST'])
+@admin_required
+def update_status(complaint_id):
+    from datetime import datetime
+
+    from extensions import db
+    from models import Complaint, StatusHistory
+
+    complaint = Complaint.query.get_or_404(complaint_id)
+
+
+    new_status = (request.form.get('new_status') or '').strip()
+    remarks = (request.form.get('remarks') or '').strip()
+
+    allowed_statuses = set(STATUS_OPTIONS)
+    if new_status not in allowed_statuses:
+        flash('Invalid status selected.', 'danger')
+        return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
+
+    if not remarks:
+        flash('Remarks are required.', 'danger')
+        return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
+
+    # One-direction flow: Submitted → Under Review → Forwarded to Agency → Resolved
+    flow_order = {
+        'Submitted': 0,
+        'Under Review': 1,
+        'Forwarded to Agency': 2,
+        'Resolved': 3,
+    }
+
+    current_status = complaint.status or 'Submitted'
+    current_idx = flow_order.get(current_status, 0)
+    new_idx = flow_order[new_status]
+
+    if new_idx < current_idx:
+        flash('Status cannot revert to a previous stage.', 'danger')
+        return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
+
+    prev_status = complaint.status
+    complaint.status = new_status
+
+    history = StatusHistory(
+        complaint_id=complaint.id,
+        previous_status=prev_status,
+        new_status=new_status,
+        remarks=remarks,
+        updated_by=__import__('flask_login').current_user.id,
+        updated_at=datetime.utcnow(),
+    )
+    db.session.add(history)
+    db.session.commit()
+
+    # Email notification to complainant
+    try:
+        subject = f'INGAT — Status Update: #{complaint.id:04d}'
+        body = f"""
+        <p>Hi {complaint.complainant.full_name},</p>
+        <p>Your complaint <strong>#ING-{complaint.id:04d}</strong> has been updated.</p>
+        <p><strong>New Status:</strong> {new_status}</p>
+        <p><strong>Remarks:</strong><br/>{remarks}</p>
+        <p>You may log in to view the full update history.</p>
+        """
+        send_email(complaint.complainant.email, subject, body)
+    except Exception:
+        # don't block status update if email fails
+        pass
+
+    flash('Status updated successfully.', 'success')
+    return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
+
 
 
 @admin_bp.route('/logout')
