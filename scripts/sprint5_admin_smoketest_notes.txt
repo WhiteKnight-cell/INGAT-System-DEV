@@ -1,0 +1,4 @@
+Sprint 5 admin added template + backend wiring is partially implemented.
+- templates/admin/report_detail.html was created.
+- routes/admin_routes.py now passes status_options to template.
+Next required: implement admin_routes.py download routes, update-status route, and status flow/email.

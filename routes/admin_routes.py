@@ -150,7 +150,135 @@ def report_detail(complaint_id):
         'admin/report_detail.html',
         complaint=complaint,
         status_history=status_history,
+        status_options=STATUS_OPTIONS,
     )
+
+
+
+def _can_transition(prev_status: str, new_status: str) -> bool:
+    flow = {
+        'Submitted': 'Under Review',
+        'Under Review': 'Forwarded to Agency',
+        'Forwarded to Agency': 'Resolved',
+        'Resolved': None,
+    }
+    return flow.get(prev_status) == new_status
+
+
+@admin_bp.route('/reports/<int:complaint_id>/download/pdf')
+@admin_required
+def download_letter_pdf(complaint_id):
+    from models import Complaint
+    from services.letter_export import build_letter_pdf
+
+    complaint = Complaint.query.get_or_404(complaint_id)
+    if not complaint.generated_letter:
+        flash('No generated letter available for this complaint.', 'warning')
+        return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
+
+    pdf_buffer = build_letter_pdf(complaint.generated_letter, complaint.id)
+    filename = f'INGAT_Complaint_{complaint.id:04d}.pdf'
+
+    # send_file is imported indirectly in some setups; import locally for safety
+    from flask import send_file
+
+    return send_file(
+        pdf_buffer,
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=filename,
+    )
+
+
+@admin_bp.route('/reports/<int:complaint_id>/download/docx')
+@admin_required
+def download_letter_docx(complaint_id):
+    from models import Complaint
+    from services.letter_export import build_letter_docx
+
+    complaint = Complaint.query.get_or_404(complaint_id)
+    if not complaint.generated_letter:
+        flash('No generated letter available for this complaint.', 'warning')
+        return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
+
+    docx_buffer = build_letter_docx(complaint.generated_letter, complaint.id)
+    filename = f'INGAT_Complaint_{complaint.id:04d}.docx'
+
+    from flask import send_file
+
+    return send_file(
+        docx_buffer,
+        mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        as_attachment=True,
+        download_name=filename,
+    )
+
+
+@admin_bp.route('/reports/<int:complaint_id>/update-status', methods=['POST'])
+@admin_required
+def update_status(complaint_id):
+    from models import Complaint, StatusHistory, AdminUser
+    from extensions import db
+    from flask import current_app
+    from utils import send_email
+
+    complaint = Complaint.query.get_or_404(complaint_id)
+
+    new_status = request.form.get('new_status', '').strip()
+    remarks = request.form.get('remarks', '').strip()
+
+    if new_status not in STATUS_OPTIONS:
+        flash('Invalid status selected.', 'danger')
+        return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
+
+    if not remarks:
+        flash('Remarks are required.', 'danger')
+        return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
+
+    prev_status = complaint.status
+    if prev_status == new_status:
+        flash('Status is already set to the selected value.', 'info')
+        return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
+
+    if not _can_transition(prev_status, new_status):
+        flash('Invalid status transition. Please follow the one-direction flow.', 'danger')
+        return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
+
+    # Save status history
+    sh = StatusHistory(
+        complaint_id=complaint.id,
+        previous_status=prev_status,
+        new_status=new_status,
+        remarks=remarks,
+        updated_by=current_user.id if isinstance(current_user, AdminUser) else None,
+    )
+    db.session.add(sh)
+
+    # Update complaint status
+    complaint.status = new_status
+    db.session.commit()
+
+    # Email complainant notification (if email exists)
+    try:
+        complainant = complaint.complainant
+        if complainant and complainant.email:
+            subject = 'INGAT — Complaint Status Updated'
+            body = f"""
+            <h3>INGAT — Status Update</h3>
+            <p>Hello {complainant.full_name},</p>
+            <p>Your complaint <strong>#ING-{complaint.id:04d}</strong> status has been updated to:</p>
+            <p style='font-size:18px;font-weight:700'>{new_status}</p>
+            <p><strong>Remarks:</strong></p>
+            <p style='white-space:pre-wrap'>{remarks}</p>
+            <p>Thank you.</p>
+            """
+            send_email(complainant.email, subject, body)
+    except Exception:
+        # Don’t break status update if email fails
+        pass
+
+    flash('Status updated successfully.', 'success')
+    return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
 
 
 @admin_bp.route('/logout')
@@ -158,3 +286,4 @@ def report_detail(complaint_id):
 def logout():
     logout_user()
     return redirect(url_for('admin.admin_login'))
+
