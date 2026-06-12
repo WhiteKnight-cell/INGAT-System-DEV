@@ -198,7 +198,7 @@ def agency_for_violation(violation_type: str):
 
 
 def seed_complaints_and_history(admin):
-    from models import Complaint, StatusHistory
+    from models import User, Complaint, StatusHistory
 for c in DEMO_COMPLAINTS:
     # Query the user using the email field inside the current complaint item
     user = db.session.execute(
@@ -207,7 +207,7 @@ for c in DEMO_COMPLAINTS:
     # Idempotent key = (user_email, violation_type, days_ago)
     # (Simple and stable for demo)
     seeded = 0
-    
+
 
     # easier without meta-types
 
