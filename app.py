@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 from pathlib import Path
-
-=======
->>>>>>> main
 from flask import Flask, redirect, request, url_for
 from extensions import db, login_manager
 from dotenv import load_dotenv
@@ -136,10 +132,10 @@ def create_app():
     with app.app_context():
         import models  # noqa: F401
         db.create_all()
-<<<<<<< HEAD
-=======
+
+
         seed_default_admin()
->>>>>>> main
+
         seed_default_agencies()
 
     return app
