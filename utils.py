@@ -113,20 +113,24 @@ def send_verification_email(to_email, full_name, otp_code):
 pwd_context = CryptContext(schemes=["pbkdf2_sha256", "scrypt"], deprecated="auto")
 
 
-def hash_password(password: str) -> str:
+import bcrypt
 
-    """Hash a password using bcrypt via passlib CryptContext."""
+def hash_password(password):
+    if not password:
+        return ""
+    # 1. Convert the plain text password string to bytes
+    password_bytes = password.encode('utf-8')
+    # 2. Generate a secure bcrypt salt
+    salt = bcrypt.gensalt()
+    # 3. Hash the password and decode it back to a string for SQLite storage
+    hashed_password = bcrypt.hashpw(password_bytes, salt)
+    return hashed_password.decode('utf-8')
 
-    """Hash a password using the current passlib CryptContext."""
 
-    return pwd_context.hash(password)
-
-
-def verify_password(stored_hash: str, password: str) -> bool:
-    """Verify a plaintext password against stored hash, supporting multiple schemes."""
-    if not stored_hash:
+def verify_password(stored_hash, password):
+    if not stored_hash or not password:
         return False
-
+    return bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8'))
 
 
  

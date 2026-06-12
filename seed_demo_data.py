@@ -22,7 +22,7 @@ from datetime import datetime, date, timedelta
 
 from app import create_app
 from extensions import db
-
+from werkzeug.security import generate_password_hash
 from utils import hash_password
 
 
