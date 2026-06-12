@@ -1,0 +1,211 @@
+"""Quick smoke tests for merged admin + user app. Run: python test_smoke.py"""
+import re
+import uuid
+
+from app import app
+from extensions import db
+from models import AdminUser, Agency, Complaint, User
+from werkzeug.security import generate_password_hash
+
+
+def run_tests():
+    client = app.test_client()
+    passed = 0
+    failed = 0
+
+    def ok(name):
+        nonlocal passed
+        passed += 1
+        print(f"  PASS  {name}")
+
+    def fail(name, detail=""):
+        nonlocal failed
+        failed += 1
+        print(f"  FAIL  {name}" + (f" — {detail}" if detail else ""))
+
+    print("\n=== INGAT smoke tests ===\n")
+
+    # Public pages load
+    for path, name in [
+        ("/", "Home redirect"),
+        ("/user/login", "User login page"),
+        ("/user/register", "User register page"),
+        ("/admin/login", "Admin login page"),
+    ]:
+        r = client.get(path, follow_redirects=False)
+        if path == "/":
+            if r.status_code in (302, 308):
+                ok(name)
+            else:
+                fail(name, f"status {r.status_code}")
+        elif r.status_code == 200 and b"INGAT" in r.data:
+            ok(name)
+        else:
+            fail(name, f"status {r.status_code}")
+
+    # Protected routes redirect when not logged in
+    r = client.get("/user/submit")
+    if r.status_code == 302 and "/user/login" in (r.location or ""):
+        ok("Submit complaint requires login")
+    else:
+        fail("Submit complaint requires login", r.location)
+
+    r = client.get("/admin/dashboard")
+    if r.status_code == 302 and "/admin/login" in (r.location or ""):
+        ok("Admin dashboard requires login")
+    else:
+        fail("Admin dashboard requires login", r.location)
+
+    with app.app_context():
+        agencies = Agency.query.count()
+        if agencies >= 3:
+            ok(f"Agencies seeded ({agencies})")
+        else:
+            fail("Agencies seeded", str(agencies))
+
+        admin = AdminUser.query.filter_by(email="admin@ingat.com").first()
+        if not admin:
+            admin = AdminUser(
+                email="admin@ingat.com",
+                password_hash=generate_password_hash("Admin@1234"),
+            )
+            db.session.add(admin)
+            db.session.commit()
+            ok("Admin account created for test")
+        else:
+            ok("Admin account exists")
+
+        test_email = f"smoke_{uuid.uuid4().hex[:8]}@test.local"
+        test_user = User.query.filter_by(email=test_email).first()
+        if not test_user:
+            test_user = User(
+                full_name="Smoke Test User",
+                email=test_email,
+                contact_number="09123456789",
+                barangay="Tondo",
+                municipality="Manila",
+                password_hash=generate_password_hash("Test@1234"),
+            )
+            db.session.add(test_user)
+            db.session.commit()
+
+    # Admin login
+    r = client.post(
+        "/admin/login",
+        data={"email": "admin@ingat.com", "password": "Admin@1234"},
+        follow_redirects=False,
+    )
+    if r.status_code == 302 and "/admin/dashboard" in (r.location or ""):
+        ok("Admin login")
+    else:
+        fail("Admin login", f"status {r.status_code} loc {r.location}")
+
+    r = client.get("/admin/dashboard")
+    if r.status_code == 200 and b"Complaint Dashboard" in r.data:
+        ok("Admin dashboard loads")
+    else:
+        fail("Admin dashboard loads", f"status {r.status_code}")
+
+    r = client.get("/user/submit")
+    if r.status_code == 302 and "/admin/dashboard" in (r.location or ""):
+        ok("Admin blocked from member submit page")
+    else:
+        fail("Admin blocked from member submit", r.location)
+
+    client.get("/admin/logout", follow_redirects=True)
+
+    # Member login
+    r = client.post(
+        "/user/login",
+        data={"email": test_email, "password": "Test@1234"},
+        follow_redirects=False,
+    )
+    if r.status_code == 302 and "/user/submit" in (r.location or ""):
+        ok("Member login")
+    else:
+        fail("Member login", f"status {r.status_code} loc {r.location}")
+
+    r = client.get("/user/submit")
+    if r.status_code == 200 and b"Submit" in r.data:
+        ok("Submit complaint form loads")
+    else:
+        fail("Submit complaint form loads", f"status {r.status_code}")
+
+    r = client.get("/admin/dashboard")
+    if r.status_code == 302 and "/admin/login" in (r.location or ""):
+        ok("Member blocked from admin dashboard")
+    else:
+        fail("Member blocked from admin dashboard", r.location)
+
+    # Submit complaint
+    r = client.post(
+        "/user/submit",
+        data={
+            "violation_type": "Illegal Dumping",
+            "street_address": "123 Test St",
+            "barangay": "Tondo",
+            "municipality": "Manila",
+            "date_incident": "2026-05-01",
+            "description": "Smoke test illegal dumping near river bank area.",
+        },
+        follow_redirects=False,
+    )
+    if r.status_code == 302 and "/user/submitted/" in (r.location or ""):
+        ok("Complaint submitted")
+        m = re.search(r"/user/submitted/(\d+)", r.location or "")
+        cid = int(m.group(1)) if m else None
+    else:
+        fail("Complaint submitted", f"status {r.status_code} loc {r.location}")
+        cid = None
+
+    if cid:
+        with app.app_context():
+            c = Complaint.query.get(cid)
+            if c and c.violation_type == "Illegal Dumping" and c.agency_id:
+                agency = Agency.query.get(c.agency_id)
+                if agency and agency.agency_name == "LGU":
+                    ok("Auto-routed to LGU for Illegal Dumping")
+                else:
+                    fail("Auto-routing", agency.agency_name if agency else "no agency")
+            else:
+                fail("Complaint saved", str(c))
+
+        r = client.get(f"/user/submitted/{cid}")
+        if r.status_code == 200 and b"#ING-" in r.data:
+            ok("Complaint success page")
+        else:
+            fail("Complaint success page", f"status {r.status_code}")
+
+        with app.app_context():
+            c = Complaint.query.get(cid)
+            if c:
+                c.generated_letter = (
+                    'Date: May 1, 2026\n\n'
+                    'To: DENR\n\n'
+                    'RE: Test Violation\n\n'
+                    'This is a sample formal complaint letter for export testing.\n\n'
+                    'Respectfully yours,\nSmoke Test User'
+                )
+                c.letter_generated = True
+                db.session.commit()
+
+        r = client.get(f"/user/submitted/{cid}/download/pdf")
+        if r.status_code == 200 and r.mimetype == 'application/pdf':
+            ok("Download letter PDF")
+        else:
+            fail("Download letter PDF", f"status {r.status_code}")
+
+        r = client.get(f"/user/submitted/{cid}/download/docx")
+        if r.status_code == 200 and 'wordprocessingml' in (r.mimetype or ''):
+            ok("Download letter DOCX")
+        else:
+            fail("Download letter DOCX", f"status {r.status_code} type {r.mimetype}")
+
+    print(f"\n=== Results: {passed} passed, {failed} failed ===\n")
+    return failed == 0
+
+
+if __name__ == "__main__":
+    import sys
+
+    sys.exit(0 if run_tests() else 1)

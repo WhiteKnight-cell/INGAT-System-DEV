@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INGAT — Submit Complaint</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background-color: #f0f4f0; font-family: 'Segoe UI', sans-serif; }
+        .navbar-ingat { background-color: #2D6A4F; }
+        .card { border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+        .btn-ingat {
+            background-color: #2D6A4F;
+            color: white; border: none;
+            border-radius: 8px; padding: 10px;
+            font-weight: 600;
+        }
+        .btn-ingat:hover { background-color: #1f4f3a; color: white; }
+        .section-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #2D6A4F;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #e8f4ee;
+        }
+        #map-placeholder {
+            background: #e8f4ee;
+            border: 1px dashed #2D6A4F;
+            border-radius: 8px;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #2D6A4F;
+            font-size: 13px;
+        }
+        #map-frame {
+            width: 100%;
+            height: 300px;
+            border-radius: 8px;
+            border: none;
+            display: none;
+        }
+        .photo-preview {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            display: none;
+            margin-top: 10px;
+        }
+        .char-count {
+            font-size: 11px;
+            color: #6c757d;
+            text-align: right;
+        }
+        .char-count.error { color: #dc3545; }
+        .char-count.success { color: #2D6A4F; }
+    </style>
+</head>
+<body>
+
+{% set f = form or {} %}
+
+<nav class="navbar navbar-dark navbar-ingat px-4 py-2">
+    <span class="navbar-brand fw-bold">🌿 INGAT</span>
+    <div class="d-flex align-items-center gap-3">
+        <span class="text-white small">{{ current_user.full_name }}</span>
+        <a href="{{ url_for('user.user_logout') }}"
+           class="btn btn-outline-light btn-sm">Logout</a>
+    </div>
+</nav>
+
+<div class="container py-4" style="max-width: 700px;">
+    <h4 class="fw-bold mb-1">Submit a Complaint</h4>
+    <p class="text-muted small mb-4">Report an environmental violation in your area.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} py-2 small">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('user.submit_complaint') }}"
+          enctype="multipart/form-data" id="complaint-form" novalidate
+          onsubmit="return validateComplaintForm()">
+
+        <div class="card p-4 mb-3">
+            <div class="section-title">Violation Details</div>
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">Violation Type <span class="text-danger">*</span></label>
+                <select name="violation_type" id="violation_type" class="form-select" required>
+                    <option value="" disabled {% if not f.get('violation_type') %}selected{% endif %}>
+                        Select violation type
+                    </option>
+                    {% for vt in ['Illegal Dumping', 'Air Pollution', 'Water Pollution', 'Illegal Logging', 'Others'] %}
+                    <option value="{{ vt }}" {% if f.get('violation_type') == vt %}selected{% endif %}>{{ vt }}</option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">The complaint will be automatically routed to the correct agency.</div>
+            </div>
+        </div>
+
+        <div class="card p-4 mb-3">
+            <div class="section-title">Location</div>
+            <div class="mb-2">
+                <label class="form-label small fw-semibold">Street Address <span class="text-danger">*</span></label>
+                <input type="text" name="street_address" id="street_address"
+                       class="form-control" placeholder="123 Rizal St." required
+                       value="{{ f.get('street_address', '') }}">
+                <div class="form-text text-warning small">
+                    Street address is for admin reference only — never shown on the map.
+                </div>
+            </div>
+            <div class="row mb-2">
+                <div class="col">
+                    <label class="form-label small fw-semibold">Barangay <span class="text-danger">*</span></label>
+                    <input type="text" name="barangay" id="barangay"
+                           class="form-control" placeholder="Tondo" required
+                           value="{{ f.get('barangay', '') }}">
+                </div>
+                <div class="col">
+                    <label class="form-label small fw-semibold">Municipality <span class="text-danger">*</span></label>
+                    <input type="text" name="municipality" id="municipality"
+                           class="form-control" placeholder="Manila" required
+                           value="{{ f.get('municipality', '') }}">
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <button type="button" class="btn btn-outline-success btn-sm mb-2"
+                        onclick="showMap()">
+                    <i class="bi bi-map"></i> Show on Map
+                </button>
+                <div id="map-placeholder">
+                    <i class="bi bi-map me-2"></i>
+                    Click "Show on Map" to preview barangay location
+                </div>
+                <iframe id="map-frame" allowfullscreen></iframe>
+            </div>
+        </div>
+
+        <div class="card p-4 mb-3">
+            <div class="section-title">Incident Details</div>
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">Date of Incident <span class="text-danger">*</span></label>
+                <input type="date" name="date_incident" id="date_incident"
+                       class="form-control" required
+                       value="{{ f.get('date_incident', '') }}">
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">Description <span class="text-danger">*</span></label>
+                <textarea name="description" id="description" class="form-control"
+                          rows="4" placeholder="Describe the violation in detail..."
+                          required minlength="20" oninput="countChars()">{{ f.get('description', '') }}</textarea>
+                <div class="char-count" id="char-count">0 / minimum 20 characters</div>
+            </div>
+        </div>
+
+        <div class="card p-4 mb-3">
+            <div class="section-title">Photo Evidence (Optional)</div>
+            <input type="file" name="photo" id="photo" class="form-control"
+                   accept=".jpg,.jpeg,.png" onchange="previewPhoto()">
+            <div class="form-text">JPG or PNG only. Maximum 5MB.</div>
+            <img id="photo-preview" class="photo-preview" src="#" alt="Photo preview">
+        </div>
+
+        <div class="d-grid">
+            <button type="submit" class="btn btn-ingat btn-lg">
+                <i class="bi bi-send"></i> Submit Complaint
+            </button>
+        </div>
+
+    </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.getElementById('date_incident').max = new Date().toISOString().split('T')[0];
+
+    function showMap() {
+        const barangay = document.getElementById('barangay').value.trim();
+        const municipality = document.getElementById('municipality').value.trim();
+
+        if (!barangay || !municipality) {
+            alert('Please enter a Barangay and Municipality to show the map.');
+            return;
+        }
+
+        const query = encodeURIComponent(barangay + ' ' + municipality);
+        const url = 'https://www.google.com/maps?q=' + query + '&output=embed';
+
+        document.getElementById('map-placeholder').style.display = 'none';
+        const frame = document.getElementById('map-frame');
+        frame.src = url;
+        frame.style.display = 'block';
+    }
+
+    function countChars() {
+        const count = document.getElementById('description').value.trim().length;
+        const el = document.getElementById('char-count');
+        el.textContent = count + ' / minimum 20 characters';
+        el.className = count >= 20 ? 'char-count success' : 'char-count error';
+    }
+
+    function validateComplaintForm() {
+        const violation = document.getElementById('violation_type').value.trim();
+        const street = document.getElementById('street_address').value.trim();
+        const barangay = document.getElementById('barangay').value.trim();
+        const municipality = document.getElementById('municipality').value.trim();
+        const dateVal = document.getElementById('date_incident').value.trim();
+        const descLen = document.getElementById('description').value.trim().length;
+
+        if (!violation) {
+            alert('Please select a violation type.');
+            return false;
+        }
+        if (!street) {
+            alert('Please enter a street address.');
+            return false;
+        }
+        if (!barangay) {
+            alert('Please enter a barangay.');
+            return false;
+        }
+        if (!municipality) {
+            alert('Please enter a municipality.');
+            return false;
+        }
+        if (!dateVal) {
+            alert('Please select the date of incident.');
+            return false;
+        }
+        if (descLen < 20) {
+            alert('Description must be at least 20 characters (you entered ' + descLen + ').');
+            return false;
+        }
+        return true;
+    }
+
+    function previewPhoto() {
+        const file = document.getElementById('photo').files[0];
+        const preview = document.getElementById('photo-preview');
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        countChars();
+        if (document.getElementById('barangay').value.trim() &&
+            document.getElementById('municipality').value.trim()) {
+            showMap();
+        }
+    });
+</script>
+</body>
+</html>
