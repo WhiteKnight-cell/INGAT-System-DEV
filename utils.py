@@ -5,7 +5,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 
 from flask import current_app
@@ -120,30 +120,14 @@ def send_verification_email(to_email, full_name, otp_code):
 import bcrypt
 
 def hash_password(password):
-    if not password:
-        return ""
-    # 1. Convert the plain text password string to bytes
-    password_bytes = password.encode('utf-8')
-    # 2. Generate a secure bcrypt salt
-    salt = bcrypt.gensalt()
-    # 3. Hash the password and decode it back to a string for SQLite storage
-    hashed_password = bcrypt.hashpw(password_bytes, salt)
-    return hashed_password.decode('utf-8')
+    # This generates a secure, modern hash (usually scrypt by default in modern Flask)
+    return generate_password_hash(password)
 
-
-def verify_password(stored_hash, password):
-    if not stored_hash or not password:
+def verify_password(stored_hash, provided_password):
+    if not stored_hash or not provided_password:
         return False
-    
-    # Fast safety check: Bcrypt hashes MUST start with $2a$, $2b$, or $2y$
-    if not (stored_hash.startswith('$2a$') or stored_hash.startswith('$2b$') or stored_hash.startswith('$2y$')):
-        return False
-        
-    try:
-        # Convert both strings back to bytes cleanly to satisfy bcrypt
-        return bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8'))
-    except Exception:
-        return False
+    # check_password_hash automatically detects if it's bcrypt, scrypt, or pbkdf2
+    return check_password_hash(stored_hash, provided_password)
 
 
 def is_bcrypt_hash(stored_hash: str) -> bool:

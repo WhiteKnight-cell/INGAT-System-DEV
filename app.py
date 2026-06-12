@@ -1,10 +1,21 @@
 from pathlib import Path
-from flask import Flask, redirect, request, url_for
+from flask import Flask, redirect, url_for, render_template
 from extensions import db, login_manager
 from dotenv import load_dotenv
 import os
 
-# Always load project-root .env (override stale shell placeholders).
+
+app = Flask(__name__)
+
+
+from routes.admin_routes import admin_bp
+from routes.user_routes import user_bp
+
+
+app.register_blueprint(admin_bp)
+app.register_blueprint(user_bp)
+
+
 load_dotenv(Path(__file__).resolve().parent / '.env', override=True)
 
 

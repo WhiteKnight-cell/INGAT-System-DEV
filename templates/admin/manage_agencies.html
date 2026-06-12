@@ -28,7 +28,7 @@
 </head>
 <body>
 <div class="sidebar">
-    <a href="{{ url_for('admin.dashboard') }}" class="sidebar-brand">INGAT</a>
+    <span class="sidebar-brand">🌿 INGAT</span>
     <div class="sidebar-label">Main</div>
     <a href="{{ url_for('admin.dashboard') }}" class="sidebar-item">
         <i class="bi bi-grid"></i> Dashboard
@@ -41,10 +41,13 @@
     <a href="{{ url_for('admin.manage_agencies') }}" class="sidebar-item active">
         <i class="bi bi-building"></i> Agencies
     </a>
-    <a href="#" class="sidebar-item">
+    <a href="{{ url_for('admin.manage_users') }}" class="sidebar-item">
         <i class="bi bi-people"></i> Manage Users
     </a>
-
+    <div class="sidebar-label">Reports</div>
+        <a href="#" class="sidebar-item">
+            <i class="bi bi-bar-chart"></i> Analytics
+        </a>
     <div class="sidebar-label">Account</div>
     <a href="{{ url_for('admin.logout') }}" class="sidebar-item">
         <i class="bi bi-box-arrow-right"></i> Logout

@@ -1,18 +1,9 @@
 
 from flask import Blueprint, Response, render_template, redirect, url_for, flash, request, send_file
-from utils import verify_password, send_email
-
-from flask import Blueprint, Response, render_template, redirect, url_for, flash, request
-from utils import verify_password
-
 from flask_login import login_user, logout_user
-import csv
-import io
-from sqlalchemy import or_
-
+from utils import verify_password, send_email
+from models import AdminUser  
 from routes.auth import admin_required
-
-
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -33,20 +24,26 @@ def admin_login():
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '').strip()
 
-        if not email or not password:
-            flash('All fields are required.', 'danger')
-            return render_template('admin/login.html')
-
-        from models import AdminUser
+        # 1. Look for the admin
         admin = AdminUser.query.filter_by(email=email).first()
-
-        if not admin or not verify_password(admin.password_hash, password):
-            flash('Invalid credentials. Please try again.', 'danger')
-            return render_template('admin/login.html')
-
-        login_user(admin)
-        return redirect(url_for('admin.dashboard'))
-
+        
+        print(f"DEBUG: Input Email: '{email}'")
+        print(f"DEBUG: Admin found? {admin is not None}")
+        
+        if admin:
+            # 2. Check the hash
+            print(f"DEBUG: DB Hash: {admin.password_hash}")
+            is_valid = verify_password(admin.password_hash, password)
+            print(f"DEBUG: Password verification result: {is_valid}")
+            
+            if is_valid:
+                login_user(admin)
+                return redirect(url_for('admin.dashboard'))
+        
+        # If we reach here, it failed
+        flash('Invalid credentials. Please try again.', 'danger')
+        return render_template('admin/login.html')
+        
     return render_template('admin/login.html')
 
 
