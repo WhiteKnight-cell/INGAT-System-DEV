@@ -35,13 +35,13 @@
     <span class="sidebar-brand">🌿 INGAT</span>
    <div class="sidebar-nav">
         <div class="sidebar-label">Main</div>
-        <a href="{{ url_for('admin.manage_agencies') }}" class="sidebar-item">
-            <i class="bi bi-building"></i> Agencies
-        </a>
+        <a href="{{ url_for('admin.dashboard') }}" class="sidebar-item ">
+            <i class="bi bi-grid"></i> Dashboard
+        
 
         <div class="sidebar-label">Management</div>
-        <a href="{{ url_for('admin.dashboard') }}" class="sidebar-item active">
-            <i class="bi bi-grid"></i> Dashboard
+        <a href="{{ url_for('admin.manage_agencies') }}" class="sidebar-item acitve">
+            <i class="bi bi-building"></i> Agencies
         </a>
 
         <a href="{{ url_for('admin.manage_reports') }}" class="sidebar-item">
@@ -53,7 +53,7 @@
         
 
         <div class="sidebar-label">Reports</div>
-        <a href="#" class="sidebar-item">
+        <a href="{{ url_for('admin.analytics_report') }}" class="sidebar-item">
             <i class="bi bi-bar-chart"></i> Analytics
         </a>
         
