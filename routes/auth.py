@@ -22,13 +22,24 @@ def member_required(fn):
     @login_required
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        from models import AdminUser, User
+        from models import AdminUser
 
+        # Hard-block admins from user endpoints
         if isinstance(current_user, AdminUser):
+            # match smoke test expectation: redirect to /admin/dashboard
             return redirect(url_for('admin.dashboard'))
-        if not isinstance(current_user, User):
+
+        # If the user object is not a normal member, treat as unauthenticated
+        try:
+            from models import User
+            if not isinstance(current_user, User):
+                flash('Please log in to continue.', 'danger')
+                return redirect(url_for('user.user_login'))
+        except Exception:
             flash('Please log in to continue.', 'danger')
             return redirect(url_for('user.user_login'))
+
         return fn(*args, **kwargs)
 
     return wrapper
+

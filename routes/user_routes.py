@@ -354,8 +354,8 @@ def my_reports():
     return render_template('user/my_reports.html')
 
 
-# ── Download PDF ──
-@user_bp.route('/download-pdf/<int:complaint_id>')
+# ── Download PDF
+@user_bp.route('/submitted/<int:complaint_id>/download/pdf')
 @login_required
 def download_letter_pdf(complaint_id):
     from models import Complaint
@@ -373,27 +373,34 @@ def download_letter_pdf(complaint_id):
     pdf.set_margins(20, 20, 20)
     pdf.set_font('Helvetica', 'B', 14)
     pdf.cell(0, 10, 'Formal Complaint Letter', ln=True, align='C')
+
     pdf.set_font('Helvetica', size=11)
     pdf.cell(0, 8, f'Reference: #ING-{complaint.id:04d}', ln=True, align='C')
     pdf.ln(8)
 
     letter_text = complaint.generated_letter or 'No letter generated.'
-    pdf.set_font('Helvetica', size=11)
-    for line in letter_text.split('\n'):
-        try:
-            pdf.multi_cell(0, 7, line)
-        except Exception:
-            pdf.multi_cell(0, 7, line.encode('latin-1', 'replace').decode('latin-1'))
 
-    pdf_bytes = pdf.output()
-    response = make_response(bytes(pdf_bytes))
+    # Robust rendering to avoid FPDF multi_cell crashes
+    for raw_line in letter_text.split('\n'):
+        safe_line = (raw_line or '').encode('latin-1', 'replace').decode('latin-1')
+        try:
+            pdf.multi_cell(0, 7, safe_line)
+        except Exception:
+            for ch in safe_line:
+                try:
+                    pdf.cell(0, 7, ch, ln=1)
+                except Exception:
+                    pdf.cell(0, 7, '?', ln=1)
+
+    pdf_bytes = pdf.output(dest='S')
+    response = make_response(pdf_bytes.encode('latin-1') if isinstance(pdf_bytes, str) else pdf_bytes)
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = f'attachment; filename=INGAT-Complaint-{complaint.id:04d}.pdf'
     return response
 
 
 # ── Download DOCX ──
-@user_bp.route('/download-docx/<int:complaint_id>')
+@user_bp.route('/submitted/<int:complaint_id>/download/docx')
 @login_required
 def download_letter_docx(complaint_id):
     from models import Complaint
@@ -426,3 +433,4 @@ def download_letter_docx(complaint_id):
     response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     response.headers['Content-Disposition'] = f'attachment; filename=INGAT-Complaint-{complaint.id:04d}.docx'
     return response
+

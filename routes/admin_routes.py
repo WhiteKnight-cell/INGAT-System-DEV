@@ -49,6 +49,179 @@ def dashboard():
     return render_template('admin/dashboard.html')
 
 
+# ===== ING005 — Agency Management =====
+@admin_bp.route('/agencies')
+@admin_required
+def manage_agencies():
+    from models import Agency
+
+    q = request.args.get('q', '').strip()
+
+    query = Agency.query
+    if q:
+        # allow quick lookup by agency name or contact email
+        query = query.filter(
+            (Agency.agency_name.ilike(f'%{q}%')) | (Agency.contact_email.ilike(f'%{q}%'))
+        )
+
+    query = query.order_by(Agency.created_at.desc())
+    agencies = query.all()
+
+    return render_template(
+        'admin/manage_agencies.html',
+        agencies=agencies,
+        q=q,
+    )
+
+
+@admin_bp.route('/agencies/add', methods=['GET', 'POST'])
+@admin_required
+def agency_add():
+    from extensions import db
+    from models import Agency
+
+    all_violation_types = VIOLATION_TYPES
+
+    if request.method == 'POST':
+        agency_name = request.form.get('agency_name', '').strip()
+        contact_email = request.form.get('contact_email', '').strip()
+        contact_number = request.form.get('contact_number', '').strip()
+        status = request.form.get('status', 'active').strip()
+        violation_types_multi = request.form.getlist('violation_types')
+
+        if not agency_name:
+            flash('Agency name is required.', 'danger')
+            return render_template(
+                'admin/agency_form.html',
+                mode_title='Add Agency',
+                form_action=url_for('admin.agency_add'),
+                agency={},
+                all_violation_types=all_violation_types,
+                selected_violation_types=violation_types_multi,
+            )
+
+        if status not in {'active', 'inactive'}:
+            flash('Invalid status.', 'danger')
+            return redirect(url_for('admin.agency_add'))
+
+        if not contact_email:
+            flash('Contact email is required.', 'danger')
+            return redirect(url_for('admin.agency_add'))
+
+        if not contact_number.isdigit() or len(contact_number) != 11:
+            flash('Contact number must be exactly 11 digits.', 'danger')
+            return render_template(
+                'admin/agency_form.html',
+                mode_title='Add Agency',
+                form_action=url_for('admin.agency_add'),
+                agency={},
+                all_violation_types=all_violation_types,
+                selected_violation_types=violation_types_multi,
+            )
+
+        # store as comma-separated string
+        violation_types_multi = violation_types_multi or []
+        invalid = [v for v in violation_types_multi if v not in all_violation_types]
+        if invalid:
+            flash('Invalid violation types selected.', 'danger')
+            return redirect(url_for('admin.agency_add'))
+
+        violation_types_csv = ','.join(violation_types_multi)
+        if not violation_types_csv:
+            flash('Please select at least one violation type.', 'danger')
+            return redirect(url_for('admin.agency_add'))
+
+        agency = Agency(
+            agency_name=agency_name,
+            contact_email=contact_email,
+            contact_number=contact_number,
+            violation_types=violation_types_csv,
+            status=status,
+        )
+        db.session.add(agency)
+        db.session.commit()
+
+        flash('Agency added successfully.', 'success')
+        return redirect(url_for('admin.manage_agencies'))
+
+    return render_template(
+        'admin/agency_form.html',
+        mode_title='Add Agency',
+        form_action=url_for('admin.agency_add'),
+        agency={},
+        all_violation_types=all_violation_types,
+        selected_violation_types=[],
+    )
+
+
+@admin_bp.route('/agencies/edit/<int:id>', methods=['GET', 'POST'])
+@admin_required
+def agency_edit(id: int):
+    from extensions import db
+    from models import Agency
+
+    agency = Agency.query.get_or_404(id)
+    all_violation_types = VIOLATION_TYPES
+
+    selected_violation_types = []
+    if agency.violation_types:
+        selected_violation_types = [v.strip() for v in agency.violation_types.split(',') if v.strip()]
+
+    if request.method == 'POST':
+        agency_name = request.form.get('agency_name', '').strip()
+        contact_email = request.form.get('contact_email', '').strip()
+        contact_number = request.form.get('contact_number', '').strip()
+        status = request.form.get('status', 'active').strip()
+        violation_types_multi = request.form.getlist('violation_types')
+
+        if not agency_name:
+            flash('Agency name is required.', 'danger')
+            return redirect(url_for('admin.agency_edit', id=id))
+
+        if status not in {'active', 'inactive'}:
+            flash('Invalid status.', 'danger')
+            return redirect(url_for('admin.agency_edit', id=id))
+
+        if not contact_email:
+            flash('Contact email is required.', 'danger')
+            return redirect(url_for('admin.agency_edit', id=id))
+
+        if not contact_number.isdigit() or len(contact_number) != 11:
+            flash('Contact number must be exactly 11 digits.', 'danger')
+            return redirect(url_for('admin.agency_edit', id=id))
+
+        violation_types_multi = violation_types_multi or []
+        invalid = [v for v in violation_types_multi if v not in all_violation_types]
+        if invalid:
+            flash('Invalid violation types selected.', 'danger')
+            return redirect(url_for('admin.agency_edit', id=id))
+
+        violation_types_csv = ','.join(violation_types_multi)
+        if not violation_types_csv:
+            flash('Please select at least one violation type.', 'danger')
+            return redirect(url_for('admin.agency_edit', id=id))
+
+        agency.agency_name = agency_name
+        agency.contact_email = contact_email
+        agency.contact_number = contact_number
+        agency.violation_types = violation_types_csv
+        agency.status = status
+
+        db.session.commit()
+        flash('Agency updated successfully.', 'success')
+        return redirect(url_for('admin.manage_agencies'))
+
+    return render_template(
+        'admin/agency_form.html',
+        mode_title='Edit Agency',
+        form_action=url_for('admin.agency_edit', id=id),
+        agency=agency,
+        all_violation_types=all_violation_types,
+        selected_violation_types=selected_violation_types,
+    )
+
+
+
 def _filtered_complaints_query():
     from models import Complaint, User
 
