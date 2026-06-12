@@ -102,7 +102,7 @@
         <div class="mb-3">
             <label class="form-label small fw-semibold">Email Address</label>
             <input type="email" name="email" class="form-control"
-                   placeholder="juan@email.com"
+                   placeholder="juan@email.com" 
                    value="{{ form.get('email', '') }}" required>
         </div>
 
@@ -117,21 +117,7 @@
         </div>
 
 
-        <div class="mb-2">
-            <label class="form-label small fw-semibold">Full Name</label>
-            <input type="text" name="full_name" class="form-control"
-                   placeholder="Juan dela Cruz" required>
-        </div>
-        <div class="mb-2">
-            <label class="form-label small fw-semibold">Email Address</label>
-            <input type="email" name="email" class="form-control"
-                   placeholder="juan@email.com" required>
-        </div>
-        <div class="mb-2">
-            <label class="form-label small fw-semibold">Contact Number (11 digits)</label>
-            <input type="text" name="contact_number" class="form-control"
-                   placeholder="09xxxxxxxxx" maxlength="11" required>
-        </div>
+        
         <div class="row mb-2">
             <div class="col">
                 <label class="form-label small fw-semibold">Barangay</label>
@@ -178,7 +164,6 @@
             </div>
         </div>
 
-        </div>
 
         <!-- Confirm Password with eye toggle -->
         <div class="mb-3">
@@ -190,15 +175,15 @@
                 <button type="button" class="toggle-pw" onclick="togglePw('confirm_password','eye2')">
                     <i id="eye2" class="bi bi-eye"></i>
                 </button>
-            </div>
-            <div class="form-text" id="confirm-feedback"></div>
-        </div>
+           </div>
+        <div class="form-text" id="confirm-feedback"></div>
+    </div> <div class="d-grid mb-3">
+        <button type="submit" class="btn btn-ingat" id="submitBtn">
+            Register
+        </button>
+    </div>
 
-        <div class="d-grid mb-3">
-            <button type="submit" class="btn btn-ingat" id="submitBtn">
-                Register
-            </button>
-        </div>
+</form> </div> ```
 
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
