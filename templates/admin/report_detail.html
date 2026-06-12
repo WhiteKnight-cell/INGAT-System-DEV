@@ -3,11 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<<<<<<< HEAD
     <title>INGAT - Complaint ING-{{ '%04d' % complaint.id }}</title>
-=======
+
     <title>INGAT - Report Detail</title>
->>>>>>> main
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -18,13 +16,11 @@
         .sidebar-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: rgba(255,255,255,.75); text-decoration: none; font-size: 14px; border-left: 3px solid transparent; }
         .sidebar-item:hover, .sidebar-item.active { background: rgba(255,255,255,.12); color: white; border-left-color: #52B788; }
         .main-content { margin-left: 240px; padding: 28px; }
-<<<<<<< HEAD
         .section-card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,.07); margin-bottom: 18px; }
         .section-title { font-size: 13px; font-weight: 700; color: #1A3C2E; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid #edf2ef; padding-bottom: 8px; margin-bottom: 14px; }
         .letter-preview { background: #fff; border: 1px solid #dee2e6; border-radius: 10px; padding: 16px; max-height: 340px; overflow-y: auto; white-space: pre-wrap; font-size: 13px; line-height: 1.6; }
         .timeline-item { border-left: 2px solid #d8eee3; padding-left: 14px; margin-left: 6px; padding-bottom: 12px; }
         .timeline-item:last-child { padding-bottom: 0; }
-=======
         .section-card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,.07); }
         .btn-ingat { background-color: #2D6A4F; color: #fff; border: none; border-radius: 8px; font-weight: 600; }
         .btn-ingat:hover { background-color: #1f4f3a; color: #fff; }
@@ -38,7 +34,7 @@
         .timeline-time { font-size: 12px; color: #6c757d; }
         .map-frame { width: 100%; height: 280px; border: 0; border-radius: 12px; }
         textarea { resize: vertical; }
->>>>>>> main
+
     </style>
 </head>
 <body>
@@ -49,11 +45,8 @@
         <i class="bi bi-grid"></i> Dashboard
     </a>
     <div class="sidebar-label">Management</div>
-<<<<<<< HEAD
     <a href="{{ url_for('admin.manage_reports') }}" class="sidebar-item active">
-=======
     <a href="{{ url_for('admin.manage_reports') }}" class="sidebar-item">
->>>>>>> main
         <i class="bi bi-file-earmark-text"></i> Manage Reports
     </a>
     <div class="sidebar-label">Account</div>
@@ -65,7 +58,6 @@
 <div class="main-content">
     <div class="d-flex justify-content-between align-items-start mb-4">
         <div>
-<<<<<<< HEAD
             <h4 class="fw-bold mb-0">Complaint ING-{{ '%04d' % complaint.id }}</h4>
             <small class="text-muted">{{ complaint.violation_type }} submitted by {{ complaint.complainant.full_name }}</small>
         </div>
@@ -155,7 +147,7 @@
         {% else %}
             <p class="small text-muted mb-0">No status updates have been added yet.</p>
         {% endif %}
-=======
+
             <h4 class="fw-bold mb-0">Report Detail</h4>
             <div class="muted-small">Reference: #ING-{{ '%04d' % complaint.id }}</div>
         </div>
@@ -293,13 +285,11 @@
                 {% endif %}
             </div>
         </div>
->>>>>>> main
     </div>
 </div>
 
 <!-- Update Status Modal -->
 <div class="modal fade" id="updateStatusModal" tabindex="-1" aria-labelledby="updateStatusModalLabel" aria-hidden="true">
-<<<<<<< HEAD
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
@@ -339,7 +329,7 @@
             </div>
         </div>
     </div>
-=======
+
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <form method="POST" action="{{ url_for('admin.update_status', complaint_id=complaint.id) }}">

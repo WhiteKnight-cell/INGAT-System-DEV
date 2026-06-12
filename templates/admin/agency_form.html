@@ -17,17 +17,16 @@
         .sidebar-item:hover, .sidebar-item.active { background: rgba(255,255,255,.12); color: white; border-left-color: #52B788; }
         .main-content { margin-left: 240px; padding: 28px; }
         .section-card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,.07); }
-<<<<<<< HEAD
 
         .btn-ingat { background-color: #2D6A4F; color: #fff; border: none; border-radius: 8px; font-weight: 600; }
         .btn-ingat:hover { background-color: #1f4f3a; color: #fff; }
         .form-label { font-weight: 600; }
         .select-multi { min-height: 160px; }
-=======
+
         .btn-ingat { background-color: #2D6A4F; color: #fff; border: none; border-radius: 8px; font-weight: 600; }
         .btn-ingat:hover { background-color: #1f4f3a; color: #fff; }
         .form-label { font-weight: 600; }
->>>>>>> main
+      
     </style>
 </head>
 <body>
@@ -43,12 +42,10 @@
     <a href="{{ url_for('admin.manage_agencies') }}" class="sidebar-item active">
         <i class="bi bi-building"></i> Agencies
     </a>
-<<<<<<< HEAD
-=======
+
     <a href="#" class="sidebar-item">
         <i class="bi bi-people"></i> Manage Users
     </a>
->>>>>>> main
 
     <div class="sidebar-label">Account</div>
     <a href="{{ url_for('admin.logout') }}" class="sidebar-item">
@@ -59,20 +56,16 @@
 <div class="main-content">
     <div class="d-flex justify-content-between align-items-start mb-4">
         <div>
-<<<<<<< HEAD
             <h4 class="fw-bold mb-0">{{ 'Edit Agency' if agency else 'Add Agency' }}</h4>
             <small class="text-muted">Manage agency record routing configuration.</small>
-=======
             <h4 class="fw-bold mb-0">{{ mode_title }}</h4>
             <small class="text-muted">Add or edit agency details.</small>
->>>>>>> main
         </div>
         <a href="{{ url_for('admin.manage_agencies') }}" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-arrow-left"></i> Back
         </a>
     </div>
 
-<<<<<<< HEAD
     <div class="section-card mb-3">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -99,7 +92,7 @@
             </div>
 
             <div class="mb-3">
-=======
+
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}

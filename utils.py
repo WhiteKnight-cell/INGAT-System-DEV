@@ -4,23 +4,12 @@ import string
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-<<<<<<< HEAD
+
 from werkzeug.security import generate_password_hash, check_password_hash
 from passlib.context import CryptContext
 
 from flask import current_app
 from itsdangerous import URLSafeTimedSerializer
-
-
-def send_email(to_email, subject, body):
-    try:
-        # allow overriding SMTP settings via env
-=======
-
-from itsdangerous import URLSafeTimedSerializer
-from passlib.context import CryptContext
-from flask import current_app
-from werkzeug.security import generate_password_hash, check_password_hash
 
 
 def send_email(to_email, subject, body):
@@ -37,7 +26,7 @@ def send_email(to_email, subject, body):
     Returns True on success, False otherwise.
     """
     try:
->>>>>>> main
+
         mail_server = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
         mail_port = int(os.getenv('MAIL_PORT', '587'))
         mail_debug = os.getenv('MAIL_DEBUG', '0') == '1'
@@ -57,33 +46,33 @@ def send_email(to_email, subject, body):
         server = smtplib.SMTP(mail_server, mail_port, timeout=20)
         if mail_debug:
             server.set_debuglevel(1)
-<<<<<<< HEAD
+
         # start TLS if using common ports
-=======
+
 
         # start TLS if supported
->>>>>>> main
+
         try:
             server.starttls()
         except Exception:
             pass
-<<<<<<< HEAD
-=======
 
->>>>>>> main
+
+
+
         server.login(gmail_user, gmail_password)
         server.send_message(msg)
         server.quit()
         return True
     except Exception as e:
-<<<<<<< HEAD
+
         import traceback
         print('Email error:')
         traceback.print_exc()
-=======
+
         print('Email error:')
         print(e)
->>>>>>> main
+
         return False
 
 
@@ -118,19 +107,18 @@ def send_verification_email(to_email, full_name, otp_code):
 
 
 # Use passlib CryptContext to support bcrypt and fallback verification of pbkdf2_sha256.
-<<<<<<< HEAD
-=======
+
 # Note: passlib will choose the scheme in the hash based on the stored value.
->>>>>>> main
+
 pwd_context = CryptContext(schemes=["pbkdf2_sha256", "scrypt"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
-<<<<<<< HEAD
+
     """Hash a password using bcrypt via passlib CryptContext."""
-=======
+
     """Hash a password using the current passlib CryptContext."""
->>>>>>> main
+
     return pwd_context.hash(password)
 
 
@@ -138,10 +126,10 @@ def verify_password(stored_hash: str, password: str) -> bool:
     """Verify a plaintext password against stored hash, supporting multiple schemes."""
     if not stored_hash:
         return False
-<<<<<<< HEAD
-=======
 
->>>>>>> main
+
+
+ 
     try:
         scheme = pwd_context.identify(stored_hash)
         if scheme is not None:
@@ -149,11 +137,9 @@ def verify_password(stored_hash: str, password: str) -> bool:
     except Exception:
         pass
 
-<<<<<<< HEAD
     # Fallback: try Werkzeug's check_password_hash for legacy werkzeug hashes (scrypt, pbkdf2:sha256, etc.)
-=======
+
     # Fallback for legacy Werkzeug hashes
->>>>>>> main
     try:
         return check_password_hash(stored_hash, password)
     except Exception:
@@ -169,8 +155,6 @@ def is_bcrypt_hash(stored_hash: str) -> bool:
         return scheme in ('bcrypt', 'bcrypt_sha256')
     except Exception:
         return False
-<<<<<<< HEAD
-=======
 
 
 # Backwards-compatible legacy name (some older code may import it)
@@ -236,4 +220,3 @@ def generate_complaint_letter(
         print(f"Gemini API error: {e}")
         return None
 
->>>>>>> main

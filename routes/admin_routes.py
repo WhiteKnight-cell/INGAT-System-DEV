@@ -1,20 +1,18 @@
-<<<<<<< HEAD
+
 from flask import Blueprint, Response, render_template, redirect, url_for, flash, request, send_file
 from utils import verify_password, send_email
-=======
-﻿from flask import Blueprint, Response, render_template, redirect, url_for, flash, request
+
+from flask import Blueprint, Response, render_template, redirect, url_for, flash, request
 from utils import verify_password
->>>>>>> main
+
 from flask_login import login_user, logout_user
 import csv
 import io
 from sqlalchemy import or_
 
 from routes.auth import admin_required
-<<<<<<< HEAD
 
-=======
->>>>>>> main
+
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -58,8 +56,8 @@ def dashboard():
     return render_template('admin/dashboard.html')
 
 
-<<<<<<< HEAD
-=======
+
+
 # ===== ING005 — Agency Management =====
 @admin_bp.route('/agencies')
 @admin_required
@@ -233,7 +231,7 @@ def agency_edit(id: int):
 
 
 
->>>>>>> main
+
 def _filtered_complaints_query():
     from models import Complaint, User
 
@@ -331,10 +329,10 @@ def report_detail(complaint_id):
         key=lambda entry: entry.updated_at,
         reverse=True,
     )
-<<<<<<< HEAD
 
-=======
->>>>>>> main
+
+
+
     return render_template(
         'admin/report_detail.html',
         complaint=complaint,
@@ -343,7 +341,7 @@ def report_detail(complaint_id):
     )
 
 
-<<<<<<< HEAD
+
 @admin_bp.route('/users')
 @admin_required
 def manage_users():
@@ -475,7 +473,6 @@ def export_users_csv():
         headers={'Content-Disposition': 'attachment; filename=ingat_users.csv'},
     )
 
-=======
 
 def _can_transition(prev_status: str, new_status: str) -> bool:
     flow = {
@@ -485,39 +482,38 @@ def _can_transition(prev_status: str, new_status: str) -> bool:
         'Resolved': None,
     }
     return flow.get(prev_status) == new_status
->>>>>>> main
+
 
 
 @admin_bp.route('/reports/<int:complaint_id>/download/pdf')
 @admin_required
 def download_letter_pdf(complaint_id):
-<<<<<<< HEAD
+
     from extensions import db
-=======
->>>>>>> main
+
+
     from models import Complaint
     from services.letter_export import build_letter_pdf
 
     complaint = Complaint.query.get_or_404(complaint_id)
-<<<<<<< HEAD
+
     if not (complaint.letter_generated and complaint.generated_letter):
         flash('No generated letter is available for this complaint.', 'warning')
-=======
+
     if not complaint.generated_letter:
         flash('No generated letter available for this complaint.', 'warning')
->>>>>>> main
+
         return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
 
     pdf_buffer = build_letter_pdf(complaint.generated_letter, complaint.id)
     filename = f'INGAT_Complaint_{complaint.id:04d}.pdf'
-<<<<<<< HEAD
+
     # return BytesIO buffer
-=======
 
     # send_file is imported indirectly in some setups; import locally for safety
     from flask import send_file
 
->>>>>>> main
+
     return send_file(
         pdf_buffer,
         mimetype='application/pdf',
@@ -526,10 +522,8 @@ def download_letter_pdf(complaint_id):
     )
 
 
-<<<<<<< HEAD
 
-=======
->>>>>>> main
+
 @admin_bp.route('/reports/<int:complaint_id>/download/docx')
 @admin_required
 def download_letter_docx(complaint_id):
@@ -537,25 +531,24 @@ def download_letter_docx(complaint_id):
     from services.letter_export import build_letter_docx
 
     complaint = Complaint.query.get_or_404(complaint_id)
-<<<<<<< HEAD
+
     if not (complaint.letter_generated and complaint.generated_letter):
         flash('No generated letter is available for this complaint.', 'warning')
-=======
+
     if not complaint.generated_letter:
         flash('No generated letter available for this complaint.', 'warning')
->>>>>>> main
+
         return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
 
     docx_buffer = build_letter_docx(complaint.generated_letter, complaint.id)
     filename = f'INGAT_Complaint_{complaint.id:04d}.docx'
-<<<<<<< HEAD
-    return __import__('flask').send_file(
-=======
+
+    return __import__('flask').send_file
 
     from flask import send_file
 
     return send_file(
->>>>>>> main
+
         docx_buffer,
         mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         as_attachment=True,
@@ -566,7 +559,7 @@ def download_letter_docx(complaint_id):
 @admin_bp.route('/reports/<int:complaint_id>/update-status', methods=['POST'])
 @admin_required
 def update_status(complaint_id):
-<<<<<<< HEAD
+
     from datetime import datetime
 
     from extensions import db
@@ -580,8 +573,7 @@ def update_status(complaint_id):
 
     allowed_statuses = set(STATUS_OPTIONS)
     if new_status not in allowed_statuses:
-=======
-    from models import Complaint, StatusHistory, AdminUser
+        from models import Complaint, StatusHistory, AdminUser
     from extensions import db
     from flask import current_app
     from utils import send_email
@@ -592,7 +584,7 @@ def update_status(complaint_id):
     remarks = request.form.get('remarks', '').strip()
 
     if new_status not in STATUS_OPTIONS:
->>>>>>> main
+
         flash('Invalid status selected.', 'danger')
         return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
 
@@ -600,7 +592,7 @@ def update_status(complaint_id):
         flash('Remarks are required.', 'danger')
         return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
 
-<<<<<<< HEAD
+
     # One-direction flow: Submitted → Under Review → Forwarded to Agency → Resolved
     flow_order = {
         'Submitted': 0,
@@ -620,8 +612,8 @@ def update_status(complaint_id):
     prev_status = complaint.status
     complaint.status = new_status
 
-    history = StatusHistory(
-=======
+    history = StatusHistory
+
     prev_status = complaint.status
     if prev_status == new_status:
         flash('Status is already set to the selected value.', 'info')
@@ -633,12 +625,12 @@ def update_status(complaint_id):
 
     # Save status history
     sh = StatusHistory(
->>>>>>> main
+
         complaint_id=complaint.id,
         previous_status=prev_status,
         new_status=new_status,
         remarks=remarks,
-<<<<<<< HEAD
+
         updated_by=__import__('flask_login').current_user.id,
         updated_at=datetime.utcnow(),
     )
@@ -670,9 +662,9 @@ def update_status(complaint_id):
         # Do not block status update if email fails (ING014)
         print(f'Email notification failed for complaint #{complaint.id}: {exc}')
 
-=======
+
         updated_by=current_user.id if isinstance(current_user, AdminUser) else None,
-    )
+    
     db.session.add(sh)
 
     # Update complaint status
@@ -697,22 +689,17 @@ def update_status(complaint_id):
     except Exception:
         # Don’t break status update if email fails
         pass
->>>>>>> main
+
 
     flash('Status updated successfully.', 'success')
     return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
 
 
-<<<<<<< HEAD
 
-=======
->>>>>>> main
+
 @admin_bp.route('/logout')
 @admin_required
 def logout():
     logout_user()
     return redirect(url_for('admin.admin_login'))
-<<<<<<< HEAD
-=======
 
->>>>>>> main

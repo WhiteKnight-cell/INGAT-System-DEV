@@ -5,11 +5,8 @@ import uuid
 from app import app
 from extensions import db
 from models import AdminUser, Agency, Complaint, User
-<<<<<<< HEAD
 from utils import hash_password
-=======
 from werkzeug.security import generate_password_hash
->>>>>>> main
 
 
 def run_tests():
@@ -54,30 +51,24 @@ def run_tests():
     else:
         fail("Submit complaint requires login", r.location)
 
-<<<<<<< HEAD
     r = client.get("/user/my-reports")
     if r.status_code == 302 and "/user/login" in (r.location or ""):
         ok("My reports requires login")
     else:
         fail("My reports requires login", r.location)
 
-=======
->>>>>>> main
     r = client.get("/admin/dashboard")
     if r.status_code == 302 and "/admin/login" in (r.location or ""):
         ok("Admin dashboard requires login")
     else:
         fail("Admin dashboard requires login", r.location)
 
-<<<<<<< HEAD
     r = client.get("/admin/reports")
     if r.status_code == 302 and "/admin/login" in (r.location or ""):
         ok("Manage reports requires admin login")
     else:
         fail("Manage reports requires admin login", r.location)
 
-=======
->>>>>>> main
     with app.app_context():
         agencies = Agency.query.count()
         if agencies >= 3:
@@ -89,11 +80,9 @@ def run_tests():
         if not admin:
             admin = AdminUser(
                 email="admin@ingat.com",
-<<<<<<< HEAD
                 password_hash=hash_password("Admin@1234"),
-=======
+
                 password_hash=generate_password_hash("Admin@1234"),
->>>>>>> main
             )
             db.session.add(admin)
             db.session.commit()
@@ -110,11 +99,8 @@ def run_tests():
                 contact_number="09123456789",
                 barangay="Tondo",
                 municipality="Manila",
-<<<<<<< HEAD
                 password_hash=hash_password("Test@1234"),
-=======
                 password_hash=generate_password_hash("Test@1234"),
->>>>>>> main
             )
             db.session.add(test_user)
             db.session.commit()
@@ -206,7 +192,6 @@ def run_tests():
         else:
             fail("Complaint success page", f"status {r.status_code}")
 
-<<<<<<< HEAD
         r = client.get(f"/user/submitted/{cid}")
         if b"Try Generate Letter Again" in r.data or b"Preview Generated Letter" in r.data:
             ok("Complaint page shows letter preview or retry")
@@ -219,8 +204,7 @@ def run_tests():
         else:
             fail("Regenerate letter route", f"status {r.status_code} loc {r.location}")
 
-=======
->>>>>>> main
+
         with app.app_context():
             c = Complaint.query.get(cid)
             if c:
@@ -246,7 +230,6 @@ def run_tests():
         else:
             fail("Download letter DOCX", f"status {r.status_code} type {r.mimetype}")
 
-<<<<<<< HEAD
         r = client.get("/user/my-reports")
         if r.status_code == 200 and b"My Reports" in r.data and b"ING-" in r.data:
             ok("My reports list shows complaint")
@@ -336,8 +319,7 @@ def run_tests():
         else:
             fail("Admin reports CSV export", f"status {r.status_code} type {r.mimetype}")
 
-=======
->>>>>>> main
+
     print(f"\n=== Results: {passed} passed, {failed} failed ===\n")
     return failed == 0
 
