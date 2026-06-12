@@ -139,29 +139,33 @@
 <!-- Sidebar -->
 <div class="sidebar">
     <span class="sidebar-brand">🌿 INGAT</span>
+
     <div class="sidebar-label">Main</div>
     <a href="{{ url_for('admin.dashboard') }}" class="sidebar-item active">
-        <i class="bi bi-grid"></i> Dashboard
+      <i class="bi bi-grid"></i> Dashboard
     </a>
 
     <div class="sidebar-label">Management</div>
     <a href="{{ url_for('admin.manage_reports') }}" class="sidebar-item">
-        <i class="bi bi-file-earmark-text"></i> Manage Reports
+      <i class="bi bi-file-earmark-text"></i> Manage Reports
     </a>
     <a href="{{ url_for('admin.manage_agencies') }}" class="sidebar-item">
-        <i class="bi bi-building"></i> Agencies
+      <i class="bi bi-building"></i> Agencies
     </a>
     <a href="{{ url_for('admin.manage_users') }}" class="sidebar-item">
-        <i class="bi bi-people"></i> Manage Users
+      <i class="bi bi-people"></i> Manage Users
     </a>
+
+    <div class="sidebar-label">Reports</div>
     <a href="{{ url_for('admin.analytics_report') }}" class="sidebar-item">
-        <i class="bi bi-bar-chart"></i> Analytics
+      <i class="bi bi-bar-chart"></i> Analytics
     </a>
+
     <div class="sidebar-label">Account</div>
     <a href="{{ url_for('admin.logout') }}" class="sidebar-item">
-        <i class="bi bi-box-arrow-right"></i> Logout
+      <i class="bi bi-box-arrow-right"></i> Logout
     </a>
-</div>
+  </div>
 
 <!-- Main Content -->
 <div class="main-content">
@@ -234,7 +238,7 @@
             <tbody>
                 {% for c in recent_complaints %}
                 <tr>
-                    <td class="fw-semibold">ING-{{ '%04d' % c.id }}</td>
+<td class="fw-semibold">{{ c.id }}</td>
                     <td>{{ c.complainant.full_name }}</td>
                     <td>{{ c.violation_type }}</td>
                     <td>{{ c.barangay }}</td>

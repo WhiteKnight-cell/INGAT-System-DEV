@@ -122,8 +122,8 @@
                 </thead>
                 <tbody>
                     {% for c in complaints %}
-                    <tr>
-                        <td class="fw-semibold">ING-{{ '%04d' % c.id }}</td>
+<tr>
+                        <td class="fw-semibold">{{ c.id }}</td>
                         <td>{{ c.complainant.full_name }}</td>
                         <td>{{ c.violation_type }}</td>
                         <td>{{ c.barangay }}</td>
