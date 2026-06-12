@@ -307,8 +307,9 @@ def user_login():
             return render_template('user/login.html')
 
         if user.status == 'suspended':
-            flash('Your account has been suspended. Please contact admin.', 'danger')
+            flash('Your account has been suspended. Please contact the administrator.', 'danger')
             return render_template('user/login.html')
+
 
         # Re-hash password with bcrypt if stored hash is not bcrypt-based
         try:
