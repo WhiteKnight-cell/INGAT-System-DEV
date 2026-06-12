@@ -234,9 +234,7 @@ def register():
             contact_number=contact_number,
             barangay=barangay,
             municipality=municipality,
-            password_hash=hash_password(password),
             status='pending',
-
             password_hash=generate_password_hash(password)
         )
         db.session.add(new_user)
@@ -406,8 +404,6 @@ def user_login():
 @member_required
 
 # ── User Logout ──
-@user_bp.route('/logout')
-@login_required
 def user_logout():
     logout_user()
     return redirect(url_for('user.user_login'))
@@ -466,7 +462,7 @@ def forgot_password():
     return render_template('user/forgot_password.html')
 
 
-@user_bp.route('/reset-password/<token>', methods=['GET', 'POST'])
+
 def reset_password(token):
     email = verify_reset_token(token)
     if not email:
@@ -742,7 +738,6 @@ def download_letter_docx(complaint_id):
     )
 
 
-@user_bp.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == 'POST':
         email = request.form.get('email', '').strip()
@@ -902,7 +897,6 @@ def report_detail(complaint_id):
 
 
 # ── Complaint Submitted ──
-@user_bp.route('/submitted/<int:complaint_id>')
 @login_required
 def complaint_submitted(complaint_id):
     from models import Complaint
@@ -914,14 +908,12 @@ def complaint_submitted(complaint_id):
 
 
 # ── My Reports ──
-@user_bp.route('/my-reports')
 @login_required
 def my_reports():
     return render_template('user/my_reports.html')
 
 
 # ── Download PDF
-@user_bp.route('/submitted/<int:complaint_id>/download/pdf')
 @login_required
 def download_letter_pdf(complaint_id):
     from models import Complaint
@@ -966,7 +958,6 @@ def download_letter_pdf(complaint_id):
 
 
 # ── Download DOCX ──
-@user_bp.route('/submitted/<int:complaint_id>/download/docx')
 @login_required
 def download_letter_docx(complaint_id):
     from models import Complaint
