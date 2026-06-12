@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INGAT - Manage Users</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        body { background-color: #f0f4f0; font-family: 'Segoe UI', sans-serif; }
+        .sidebar { width: 240px; min-height: 100vh; background-color: #1A3C2E; position: fixed; top: 0; left: 0; padding-top: 20px; z-index: 100; }
+        .sidebar-brand { color: white; font-size: 20px; font-weight: 700; padding: 0 20px 20px; border-bottom: 1px solid rgba(255,255,255,.1); display: block; text-decoration: none; }
+        .sidebar-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,.4); padding: 12px 20px 4px; }
+        .sidebar-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: rgba(255,255,255,.75); text-decoration: none; font-size: 14px; border-left: 3px solid transparent; }
+        .sidebar-item:hover, .sidebar-item.active { background: rgba(255,255,255,.12); color: white; border-left-color: #52B788; }
+        .main-content { margin-left: 240px; padding: 28px; }
+        .section-card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,.07); }
+        .btn-ingat { background-color: #2D6A4F; color: #fff; border: none; border-radius: 8px; font-weight: 600; }
+        .btn-ingat:hover { background-color: #1f4f3a; color: #fff; }
+        .table th { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: #6c757d; }
+        .table td { font-size: 13px; vertical-align: middle; }
+        .badge-active { background: #198754; }
+        .badge-suspended { background: #dc3545; }
+        .truncate { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .modal-confirm .modal-body { font-size: 14px; }
+    </style>
+</head>
+<body>
+<div class="sidebar">
+    <a href="{{ url_for('admin.dashboard') }}" class="sidebar-brand">INGAT</a>
+
+    <div class="sidebar-label">Main</div>
+    <a href="{{ url_for('admin.dashboard') }}" class="sidebar-item">
+        <i class="bi bi-grid"></i> Dashboard
+    </a>
+
+    <div class="sidebar-label">Management</div>
+    <a href="{{ url_for('admin.manage_reports') }}" class="sidebar-item">
+        <i class="bi bi-file-earmark-text"></i> Manage Reports
+    </a>
+    <a href="{{ url_for('admin.manage_agencies') }}" class="sidebar-item">
+        <i class="bi bi-building"></i> Agencies
+    </a>
+    <a href="{{ url_for('admin.manage_users') }}" class="sidebar-item active">
+        <i class="bi bi-people"></i> Manage Users
+    </a>
+
+    <div class="sidebar-label">Account</div>
+    <a href="{{ url_for('admin.logout') }}" class="sidebar-item">
+        <i class="bi bi-box-arrow-right"></i> Logout
+    </a>
+</div>
+
+<div class="main-content">
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h4 class="fw-bold mb-0">Manage Users</h4>
+            <small class="text-muted">Search users, filter by status, suspend/reactivate, and export CSV.</small>
+        </div>
+        <a href="{{ url_for('admin.export_users_csv', q=search, status=status_filter) }}" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-download"></i> Export CSV
+        </a>
+    </div>
+
+    <div class="section-card mb-3">
+        <form method="GET" action="{{ url_for('admin.manage_users') }}" class="row g-2 align-items-end">
+            <div class="col-md-7">
+                <label class="form-label small fw-semibold mb-1">Search</label>
+                <input type="text" name="q" class="form-control form-control-sm" value="{{ search or '' }}" placeholder="Name or email">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold mb-1">Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All statuses</option>
+                    {% for s in statuses %}
+                        <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s|replace('-', ' ')|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-ingat btn-sm flex-grow-1">Apply</button>
+                <a href="{{ url_for('admin.manage_users') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="section-card p-0 overflow-hidden">
+        {% if users %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="bg-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Date Registered</th>
+                    <th>Total Reports</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for u in users %}
+                <tr>
+                    <td class="fw-semibold">{{ u.id }}</td>
+                    <td class="truncate" title="{{ u.full_name }}">{{ u.full_name }}</td>
+                    <td class="truncate" title="{{ u.email }}">{{ u.email }}</td>
+                    <td>{{ u.created_at.strftime('%b %d, %Y') if u.created_at else '-' }}</td>
+                    <td class="fw-semibold">{{ u.total_reports }}</td>
+                    <td>
+                        {% if u.status == 'active' %}
+                            <span class="badge badge-active">Active</span>
+                        {% else %}
+                            <span class="badge badge-suspended">Suspended</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        {% if u.status == 'active' %}
+                            <button class="btn btn-sm btn-outline-danger"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#confirmUserModal"
+                                    data-action="suspend"
+                                    data-user-id="{{ u.id }}"
+                                    data-user-name="{{ u.full_name }}">
+                                <i class="bi bi-pause-circle"></i> Suspend
+                            </button>
+                        {% else %}
+                            <button class="btn btn-sm btn-outline-success"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#confirmUserModal"
+                                    data-action="reactivate"
+                                    data-user-id="{{ u.id }}"
+                                    data-user-name="{{ u.full_name }}">
+                                <i class="bi bi-play-circle"></i> Reactivate
+                            </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-inbox" style="font-size: 34px;"></i>
+            <p class="small mt-2 mb-0">No users match the current filters.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmUserModal" tabindex="-1" aria-labelledby="confirmUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content modal-confirm">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmUserModalLabel">Confirm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2 small text-muted">This action requires confirmation.</div>
+                <p class="mb-3" id="confirmUserMessage"></p>
+
+                <form id="confirmUserForm" method="POST">
+                    <button type="submit" class="btn btn-ingat w-100">
+                        <i class="bi bi-check2-circle"></i> Confirm
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const confirmUserModal = document.getElementById('confirmUserModal');
+    confirmUserModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const action = button.getAttribute('data-action');
+        const userId = button.getAttribute('data-user-id');
+        const userName = button.getAttribute('data-user-name');
+
+        const modalLabel = document.getElementById('confirmUserModalLabel');
+        const message = document.getElementById('confirmUserMessage');
+        const form = document.getElementById('confirmUserForm');
+
+        if (action === 'suspend') {
+            modalLabel.textContent = 'Suspend User';
+            message.textContent = `Suspend ${userName} (ID: ${userId})? They will not be able to log in.`;
+            form.action = `/admin/users/suspend/${userId}`;
+        } else {
+            modalLabel.textContent = 'Reactivate User';
+            message.textContent = `Reactivate ${userName} (ID: ${userId})? They will be able to log in again.`;
+            form.action = `/admin/users/reactivate/${userId}`;
+        }
+    });
+</script>
+</body>
+</html>
+

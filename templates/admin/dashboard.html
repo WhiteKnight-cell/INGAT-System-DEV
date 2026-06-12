@@ -148,12 +148,13 @@
         <a href="{{ url_for('admin.manage_reports') }}" class="sidebar-item">
             <i class="bi bi-file-earmark-text"></i> Manage Reports
         </a>
-        <a href="#" class="sidebar-item">
+        <a href="{{ url_for('admin.manage_users') }}" class="sidebar-item">
             <i class="bi bi-people"></i> Manage Users
         </a>
-        <a href="#" class="sidebar-item">
+        <a href="{{ url_for('admin.manage_reports') }}" class="sidebar-item">
             <i class="bi bi-building"></i> Agencies
         </a>
+
         <div class="sidebar-label">Reports</div>
         <a href="#" class="sidebar-item">
             <i class="bi bi-bar-chart"></i> Analytics

@@ -156,6 +156,139 @@ def report_detail(complaint_id):
     )
 
 
+@admin_bp.route('/users')
+@admin_required
+def manage_users():
+    """ING006 — manage registered users (search, filter, suspend/reactivate, export)."""
+    from models import User, Complaint
+    from extensions import db
+    from sqlalchemy import func
+
+    q = (request.args.get('q') or '').strip()
+    status_filter = (request.args.get('status') or '').strip()
+
+    # Base query
+    query = User.query
+
+    if q:
+        like = f'%{q}%'
+        query = query.filter(or_(User.full_name.ilike(like), User.email.ilike(like)))
+
+    if status_filter:
+        query = query.filter(User.status == status_filter)
+
+    # For "Total Reports": compute via Complaint aggregation
+    # We'll fetch users first then compute totals via grouped complaint query for efficiency.
+    users = query.order_by(User.created_at.desc()).all()
+
+    user_ids = [u.id for u in users]
+    totals_by_user = {}
+    if user_ids:
+        totals = (
+            db.session.query(Complaint.user_id, func.count(Complaint.id))
+            .filter(Complaint.user_id.in_(user_ids))
+            .group_by(Complaint.user_id)
+            .all()
+        )
+        totals_by_user = {uid: total for uid, total in totals}
+
+    # Attach total_reports to each user object for template convenience
+    for u in users:
+        u.total_reports = totals_by_user.get(u.id, 0)
+
+    statuses = ['active', 'suspended']
+
+    return render_template(
+        'admin/manage_users.html',
+        users=users,
+        search=q,
+        status_filter=status_filter,
+        statuses=statuses,
+    )
+
+
+@admin_bp.route('/users/suspend/<int:user_id>', methods=['POST'])
+@admin_required
+def suspend_user(user_id: int):
+    from models import User
+    from extensions import db
+
+    user = User.query.get_or_404(user_id)
+    user.status = 'suspended'
+    db.session.commit()
+    flash('User suspended successfully.', 'success')
+    return redirect(url_for('admin.manage_users'))
+
+
+@admin_bp.route('/users/reactivate/<int:user_id>', methods=['POST'])
+@admin_required
+def reactivate_user(user_id: int):
+    from models import User
+    from extensions import db
+
+    user = User.query.get_or_404(user_id)
+    user.status = 'active'
+    db.session.commit()
+    flash('User reactivated successfully.', 'success')
+    return redirect(url_for('admin.manage_users'))
+
+
+@admin_bp.route('/users/export')
+@admin_required
+def export_users_csv():
+    """Export users for ING006."""
+    import csv
+    import io
+    from models import User, Complaint
+    from extensions import db
+    from sqlalchemy import func
+
+    q = (request.args.get('q') or '').strip()
+    status_filter = (request.args.get('status') or '').strip()
+
+    query = User.query
+    if q:
+        like = f'%{q}%'
+        query = query.filter(or_(User.full_name.ilike(like), User.email.ilike(like)))
+
+    if status_filter:
+        query = query.filter(User.status == status_filter)
+
+    users = query.order_by(User.created_at.desc()).all()
+    user_ids = [u.id for u in users]
+
+    totals_by_user = {}
+    if user_ids:
+        totals = (
+            db.session.query(Complaint.user_id, func.count(Complaint.id))
+            .filter(Complaint.user_id.in_(user_ids))
+            .group_by(Complaint.user_id)
+            .all()
+        )
+        totals_by_user = {uid: total for uid, total in totals}
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['ID', 'Name', 'Email', 'Date Registered', 'Total Reports', 'Status'])
+
+    for u in users:
+        writer.writerow([
+            u.id,
+            u.full_name,
+            u.email,
+            u.created_at.strftime('%Y-%m-%d %H:%M') if u.created_at else '',
+            totals_by_user.get(u.id, 0),
+            u.status,
+        ])
+
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': 'attachment; filename=ingat_users.csv'},
+    )
+
+
+
 @admin_bp.route('/reports/<int:complaint_id>/download/pdf')
 @admin_required
 def download_letter_pdf(complaint_id):
@@ -254,20 +387,31 @@ def update_status(complaint_id):
     db.session.add(history)
     db.session.commit()
 
-    # Email notification to complainant
+    # Email notification to complainant (ING014)
     try:
-        subject = f'INGAT — Status Update: #{complaint.id:04d}'
-        body = f"""
-        <p>Hi {complaint.complainant.full_name},</p>
-        <p>Your complaint <strong>#ING-{complaint.id:04d}</strong> has been updated.</p>
-        <p><strong>New Status:</strong> {new_status}</p>
-        <p><strong>Remarks:</strong><br/>{remarks}</p>
-        <p>You may log in to view the full update history.</p>
-        """
-        send_email(complaint.complainant.email, subject, body)
-    except Exception:
-        # don't block status update if email fails
-        pass
+        complainant = complaint.complainant
+        if complainant and getattr(complainant, 'email_notif', False) is True:
+            from flask import url_for
+
+            my_reports_url = url_for('user.my_reports', _external=True)
+
+            subject = f'INGAT — Complaint Status Updated: #ING-{complaint.id:04d}'
+            body = f"""
+            <p>Hi {complainant.full_name},</p>
+
+            <p>Your complaint <strong>#ING-{complaint.id:04d}</strong> has been updated.</p>
+
+            <p><strong>Updated Status:</strong> {new_status}</p>
+            <p><strong>Admin Remarks:</strong><br/>{remarks}</p>
+
+            <p><strong>My Reports:</strong> <a href="{my_reports_url}">{my_reports_url}</a></p>
+            """
+
+            send_email(complainant.email, subject, body)
+    except Exception as exc:
+        # Do not block status update if email fails (ING014)
+        print(f'Email notification failed for complaint #{complaint.id}: {exc}')
+
 
     flash('Status updated successfully.', 'success')
     return redirect(url_for('admin.report_detail', complaint_id=complaint_id))

@@ -258,6 +258,7 @@ def run_tests():
             fail("My reports status filter", f"status {r.status_code}")
 
         other_email = f"other_{uuid.uuid4().hex[:8]}@test.local"
+
         with app.app_context():
             other_user = User(
                 full_name="Other User",
