@@ -96,14 +96,14 @@
             <label class="form-label small fw-semibold">Full Name</label>
             <input type="text" name="full_name" class="form-control"
                    placeholder="Juan dela Cruz"
-                   value="{{ f.get('full_name', '') }}" required>
+                  value="{{ form.get('full_name', '') }}"
         </div>
 
         <div class="mb-3">
             <label class="form-label small fw-semibold">Email Address</label>
             <input type="email" name="email" class="form-control"
                    placeholder="juan@email.com"
-                   value="{{ f.get('email', '') }}" required>
+                   value="{{ form.get('email', '') }}" required>
         </div>
 
         <!-- Contact Number with live validation -->
@@ -111,7 +111,7 @@
             <label class="form-label small fw-semibold">Contact Number</label>
             <input type="text" name="contact_number" id="contact_number" class="form-control"
                    placeholder="09xxxxxxxxx" maxlength="11"
-                   value="{{ f.get('contact_number', '') }}"
+                   value="{{ form.get('contact_number', '') }}"
                    oninput="this.value = this.value.replace(/\D/g, '').slice(0, 11);" required>
             <div class="form-text">Enter exactly 11 digits, starting with 09.</div>
         </div>
@@ -137,21 +137,20 @@
                 <label class="form-label small fw-semibold">Barangay</label>
                 <input type="text" name="barangay" class="form-control"
                        placeholder="Tondo"
-                       value="{{ f.get('barangay', '') }}" required>
+                       value="{{ form.get('barangay', '') }}" required>
 
-                       placeholder="Tondo" required>
+                       
             </div>
             <div class="col">
                 <label class="form-label small fw-semibold">Municipality</label>
                 <input type="text" name="municipality" class="form-control"
                        placeholder="Manila"
-                       value="{{ f.get('municipality', '') }}" required>
+                       value="{{ form.get('municipality', '') }}" required>
             </div>
         </div>
 
         <div class="mb-3">
 
-                       placeholder="Manila" required>
             </div>
         </div>
 
@@ -163,7 +162,7 @@
                        class="form-control" style="border-radius: 6px 0 0 6px;"
                        placeholder="Create a strong password" required>
 
-                       placeholder="Min. 8 chars, upper, lower, number, symbol" required>
+                       
                 <button type="button" class="toggle-pw" onclick="togglePw('password', 'eye1')">
                     <i id="eye1" class="bi bi-eye"></i>
                 </button>
