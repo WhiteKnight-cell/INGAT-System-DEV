@@ -3,6 +3,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
 import re
 
+from routes.auth import member_required
+
 user_bp = Blueprint('user', __name__, url_prefix='/user')
 
 
@@ -199,7 +201,7 @@ def reset_password(token):
 
 # ── Submit Complaint ──
 @user_bp.route('/submit', methods=['GET', 'POST'])
-@login_required
+@member_required
 def submit_complaint():
     if request.method == 'POST':
         violation_type = request.form.get('violation_type', '').strip()
