@@ -7,7 +7,11 @@ INGAT offers a user-friendly web platform that allows Filipino community members
 ```bash
 python -m venv venv
 venv\Scripts\activate
+<<<<<<< HEAD
 pip install -r requirements.txt
+=======
+pip install flask flask-sqlalchemy flask-login python-dotenv google-generativeai fpdf2 python-docx openpyxl pillow
+>>>>>>> main
 python app.py
 ```
 
@@ -22,6 +26,7 @@ python app.py
 Create the first admin account (one time):
 
 ```bash
+<<<<<<< HEAD
 python -c "from app import app; from extensions import db; from models import AdminUser; from utils import hash_password; app.app_context().push(); db.session.add(AdminUser(email='admin@ingat.com', password_hash=hash_password('Admin@1234'))); db.session.commit(); print('Admin created')"
 ```
 
@@ -47,3 +52,9 @@ pip install -r requirements.txt
 ```
 
 Use the `utils.hash_password()` helper when creating admin or manual accounts so stored hashes are compatible with the application's verification logic.
+=======
+python -c "from app import app; from extensions import db; from models import AdminUser; from werkzeug.security import generate_password_hash; app.app_context().push(); db.session.add(AdminUser(email='admin@ingat.com', password_hash=generate_password_hash('Admin@1234'))); db.session.commit(); print('Admin created')"
+```
+
+Default agencies (DENR, LLDA, LGU) are seeded automatically on first run.
+>>>>>>> main

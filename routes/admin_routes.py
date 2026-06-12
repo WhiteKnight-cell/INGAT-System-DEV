@@ -1,12 +1,20 @@
+<<<<<<< HEAD
 from flask import Blueprint, Response, render_template, redirect, url_for, flash, request, send_file
 from utils import verify_password, send_email
+=======
+﻿from flask import Blueprint, Response, render_template, redirect, url_for, flash, request
+from utils import verify_password
+>>>>>>> main
 from flask_login import login_user, logout_user
 import csv
 import io
 from sqlalchemy import or_
 
 from routes.auth import admin_required
+<<<<<<< HEAD
 
+=======
+>>>>>>> main
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -50,6 +58,182 @@ def dashboard():
     return render_template('admin/dashboard.html')
 
 
+<<<<<<< HEAD
+=======
+# ===== ING005 — Agency Management =====
+@admin_bp.route('/agencies')
+@admin_required
+def manage_agencies():
+    from models import Agency
+
+    q = request.args.get('q', '').strip()
+
+    query = Agency.query
+    if q:
+        # allow quick lookup by agency name or contact email
+        query = query.filter(
+            (Agency.agency_name.ilike(f'%{q}%')) | (Agency.contact_email.ilike(f'%{q}%'))
+        )
+
+    query = query.order_by(Agency.created_at.desc())
+    agencies = query.all()
+
+    return render_template(
+        'admin/manage_agencies.html',
+        agencies=agencies,
+        q=q,
+    )
+
+
+@admin_bp.route('/agencies/add', methods=['GET', 'POST'])
+@admin_required
+def agency_add():
+    from extensions import db
+    from models import Agency
+
+    all_violation_types = VIOLATION_TYPES
+
+    if request.method == 'POST':
+        agency_name = request.form.get('agency_name', '').strip()
+        contact_email = request.form.get('contact_email', '').strip()
+        contact_number = request.form.get('contact_number', '').strip()
+        status = request.form.get('status', 'active').strip()
+        violation_types_multi = request.form.getlist('violation_types')
+
+        if not agency_name:
+            flash('Agency name is required.', 'danger')
+            return render_template(
+                'admin/agency_form.html',
+                mode_title='Add Agency',
+                form_action=url_for('admin.agency_add'),
+                agency={},
+                all_violation_types=all_violation_types,
+                selected_violation_types=violation_types_multi,
+            )
+
+        if status not in {'active', 'inactive'}:
+            flash('Invalid status.', 'danger')
+            return redirect(url_for('admin.agency_add'))
+
+        if not contact_email:
+            flash('Contact email is required.', 'danger')
+            return redirect(url_for('admin.agency_add'))
+
+        if not contact_number.isdigit() or len(contact_number) != 11:
+            flash('Contact number must be exactly 11 digits.', 'danger')
+            return render_template(
+                'admin/agency_form.html',
+                mode_title='Add Agency',
+                form_action=url_for('admin.agency_add'),
+                agency={},
+                all_violation_types=all_violation_types,
+                selected_violation_types=violation_types_multi,
+            )
+
+        # store as comma-separated string
+        violation_types_multi = violation_types_multi or []
+        invalid = [v for v in violation_types_multi if v not in all_violation_types]
+        if invalid:
+            flash('Invalid violation types selected.', 'danger')
+            return redirect(url_for('admin.agency_add'))
+
+        violation_types_csv = ','.join(violation_types_multi)
+        if not violation_types_csv:
+            flash('Please select at least one violation type.', 'danger')
+            return redirect(url_for('admin.agency_add'))
+
+        agency = Agency(
+            agency_name=agency_name,
+            contact_email=contact_email,
+            contact_number=contact_number,
+            violation_types=violation_types_csv,
+            status=status,
+        )
+        db.session.add(agency)
+        db.session.commit()
+
+        flash('Agency added successfully.', 'success')
+        return redirect(url_for('admin.manage_agencies'))
+
+    return render_template(
+        'admin/agency_form.html',
+        mode_title='Add Agency',
+        form_action=url_for('admin.agency_add'),
+        agency={},
+        all_violation_types=all_violation_types,
+        selected_violation_types=[],
+    )
+
+
+@admin_bp.route('/agencies/edit/<int:id>', methods=['GET', 'POST'])
+@admin_required
+def agency_edit(id: int):
+    from extensions import db
+    from models import Agency
+
+    agency = Agency.query.get_or_404(id)
+    all_violation_types = VIOLATION_TYPES
+
+    selected_violation_types = []
+    if agency.violation_types:
+        selected_violation_types = [v.strip() for v in agency.violation_types.split(',') if v.strip()]
+
+    if request.method == 'POST':
+        agency_name = request.form.get('agency_name', '').strip()
+        contact_email = request.form.get('contact_email', '').strip()
+        contact_number = request.form.get('contact_number', '').strip()
+        status = request.form.get('status', 'active').strip()
+        violation_types_multi = request.form.getlist('violation_types')
+
+        if not agency_name:
+            flash('Agency name is required.', 'danger')
+            return redirect(url_for('admin.agency_edit', id=id))
+
+        if status not in {'active', 'inactive'}:
+            flash('Invalid status.', 'danger')
+            return redirect(url_for('admin.agency_edit', id=id))
+
+        if not contact_email:
+            flash('Contact email is required.', 'danger')
+            return redirect(url_for('admin.agency_edit', id=id))
+
+        if not contact_number.isdigit() or len(contact_number) != 11:
+            flash('Contact number must be exactly 11 digits.', 'danger')
+            return redirect(url_for('admin.agency_edit', id=id))
+
+        violation_types_multi = violation_types_multi or []
+        invalid = [v for v in violation_types_multi if v not in all_violation_types]
+        if invalid:
+            flash('Invalid violation types selected.', 'danger')
+            return redirect(url_for('admin.agency_edit', id=id))
+
+        violation_types_csv = ','.join(violation_types_multi)
+        if not violation_types_csv:
+            flash('Please select at least one violation type.', 'danger')
+            return redirect(url_for('admin.agency_edit', id=id))
+
+        agency.agency_name = agency_name
+        agency.contact_email = contact_email
+        agency.contact_number = contact_number
+        agency.violation_types = violation_types_csv
+        agency.status = status
+
+        db.session.commit()
+        flash('Agency updated successfully.', 'success')
+        return redirect(url_for('admin.manage_agencies'))
+
+    return render_template(
+        'admin/agency_form.html',
+        mode_title='Edit Agency',
+        form_action=url_for('admin.agency_edit', id=id),
+        agency=agency,
+        all_violation_types=all_violation_types,
+        selected_violation_types=selected_violation_types,
+    )
+
+
+
+>>>>>>> main
 def _filtered_complaints_query():
     from models import Complaint, User
 
@@ -147,7 +331,10 @@ def report_detail(complaint_id):
         key=lambda entry: entry.updated_at,
         reverse=True,
     )
+<<<<<<< HEAD
 
+=======
+>>>>>>> main
     return render_template(
         'admin/report_detail.html',
         complaint=complaint,
@@ -156,6 +343,7 @@ def report_detail(complaint_id):
     )
 
 
+<<<<<<< HEAD
 @admin_bp.route('/users')
 @admin_required
 def manage_users():
@@ -287,23 +475,49 @@ def export_users_csv():
         headers={'Content-Disposition': 'attachment; filename=ingat_users.csv'},
     )
 
+=======
+
+def _can_transition(prev_status: str, new_status: str) -> bool:
+    flow = {
+        'Submitted': 'Under Review',
+        'Under Review': 'Forwarded to Agency',
+        'Forwarded to Agency': 'Resolved',
+        'Resolved': None,
+    }
+    return flow.get(prev_status) == new_status
+>>>>>>> main
 
 
 @admin_bp.route('/reports/<int:complaint_id>/download/pdf')
 @admin_required
 def download_letter_pdf(complaint_id):
+<<<<<<< HEAD
     from extensions import db
+=======
+>>>>>>> main
     from models import Complaint
     from services.letter_export import build_letter_pdf
 
     complaint = Complaint.query.get_or_404(complaint_id)
+<<<<<<< HEAD
     if not (complaint.letter_generated and complaint.generated_letter):
         flash('No generated letter is available for this complaint.', 'warning')
+=======
+    if not complaint.generated_letter:
+        flash('No generated letter available for this complaint.', 'warning')
+>>>>>>> main
         return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
 
     pdf_buffer = build_letter_pdf(complaint.generated_letter, complaint.id)
     filename = f'INGAT_Complaint_{complaint.id:04d}.pdf'
+<<<<<<< HEAD
     # return BytesIO buffer
+=======
+
+    # send_file is imported indirectly in some setups; import locally for safety
+    from flask import send_file
+
+>>>>>>> main
     return send_file(
         pdf_buffer,
         mimetype='application/pdf',
@@ -312,7 +526,10 @@ def download_letter_pdf(complaint_id):
     )
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> main
 @admin_bp.route('/reports/<int:complaint_id>/download/docx')
 @admin_required
 def download_letter_docx(complaint_id):
@@ -320,13 +537,25 @@ def download_letter_docx(complaint_id):
     from services.letter_export import build_letter_docx
 
     complaint = Complaint.query.get_or_404(complaint_id)
+<<<<<<< HEAD
     if not (complaint.letter_generated and complaint.generated_letter):
         flash('No generated letter is available for this complaint.', 'warning')
+=======
+    if not complaint.generated_letter:
+        flash('No generated letter available for this complaint.', 'warning')
+>>>>>>> main
         return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
 
     docx_buffer = build_letter_docx(complaint.generated_letter, complaint.id)
     filename = f'INGAT_Complaint_{complaint.id:04d}.docx'
+<<<<<<< HEAD
     return __import__('flask').send_file(
+=======
+
+    from flask import send_file
+
+    return send_file(
+>>>>>>> main
         docx_buffer,
         mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         as_attachment=True,
@@ -337,6 +566,7 @@ def download_letter_docx(complaint_id):
 @admin_bp.route('/reports/<int:complaint_id>/update-status', methods=['POST'])
 @admin_required
 def update_status(complaint_id):
+<<<<<<< HEAD
     from datetime import datetime
 
     from extensions import db
@@ -350,6 +580,19 @@ def update_status(complaint_id):
 
     allowed_statuses = set(STATUS_OPTIONS)
     if new_status not in allowed_statuses:
+=======
+    from models import Complaint, StatusHistory, AdminUser
+    from extensions import db
+    from flask import current_app
+    from utils import send_email
+
+    complaint = Complaint.query.get_or_404(complaint_id)
+
+    new_status = request.form.get('new_status', '').strip()
+    remarks = request.form.get('remarks', '').strip()
+
+    if new_status not in STATUS_OPTIONS:
+>>>>>>> main
         flash('Invalid status selected.', 'danger')
         return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
 
@@ -357,6 +600,7 @@ def update_status(complaint_id):
         flash('Remarks are required.', 'danger')
         return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
 
+<<<<<<< HEAD
     # One-direction flow: Submitted → Under Review → Forwarded to Agency → Resolved
     flow_order = {
         'Submitted': 0,
@@ -377,10 +621,24 @@ def update_status(complaint_id):
     complaint.status = new_status
 
     history = StatusHistory(
+=======
+    prev_status = complaint.status
+    if prev_status == new_status:
+        flash('Status is already set to the selected value.', 'info')
+        return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
+
+    if not _can_transition(prev_status, new_status):
+        flash('Invalid status transition. Please follow the one-direction flow.', 'danger')
+        return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
+
+    # Save status history
+    sh = StatusHistory(
+>>>>>>> main
         complaint_id=complaint.id,
         previous_status=prev_status,
         new_status=new_status,
         remarks=remarks,
+<<<<<<< HEAD
         updated_by=__import__('flask_login').current_user.id,
         updated_at=datetime.utcnow(),
     )
@@ -412,14 +670,49 @@ def update_status(complaint_id):
         # Do not block status update if email fails (ING014)
         print(f'Email notification failed for complaint #{complaint.id}: {exc}')
 
+=======
+        updated_by=current_user.id if isinstance(current_user, AdminUser) else None,
+    )
+    db.session.add(sh)
+
+    # Update complaint status
+    complaint.status = new_status
+    db.session.commit()
+
+    # Email complainant notification (if email exists)
+    try:
+        complainant = complaint.complainant
+        if complainant and complainant.email:
+            subject = 'INGAT — Complaint Status Updated'
+            body = f"""
+            <h3>INGAT — Status Update</h3>
+            <p>Hello {complainant.full_name},</p>
+            <p>Your complaint <strong>#ING-{complaint.id:04d}</strong> status has been updated to:</p>
+            <p style='font-size:18px;font-weight:700'>{new_status}</p>
+            <p><strong>Remarks:</strong></p>
+            <p style='white-space:pre-wrap'>{remarks}</p>
+            <p>Thank you.</p>
+            """
+            send_email(complainant.email, subject, body)
+    except Exception:
+        # Don’t break status update if email fails
+        pass
+>>>>>>> main
 
     flash('Status updated successfully.', 'success')
     return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> main
 @admin_bp.route('/logout')
 @admin_required
 def logout():
     logout_user()
     return redirect(url_for('admin.admin_login'))
+<<<<<<< HEAD
+=======
+
+>>>>>>> main

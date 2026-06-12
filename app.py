@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 from pathlib import Path
 
+=======
+>>>>>>> main
 from flask import Flask, redirect, request, url_for
 from extensions import db, login_manager
 from dotenv import load_dotenv
@@ -37,6 +40,54 @@ def seed_default_agencies():
     ]
     for agency in agencies:
         db.session.add(agency)
+    db.session.commit()
+
+
+def seed_default_agencies():
+    from models import Agency
+
+    if Agency.query.count() > 0:
+        return
+
+    agencies = [
+        Agency(
+            agency_name='DENR',
+            contact_email='denr@gov.ph',
+            contact_number='09171234567',
+            violation_types='Air Pollution,Illegal Logging',
+        ),
+        Agency(
+            agency_name='LLDA',
+            contact_email='llda@gov.ph',
+            contact_number='09181234567',
+            violation_types='Water Pollution',
+        ),
+        Agency(
+            agency_name='LGU',
+            contact_email='lgu@gov.ph',
+            contact_number='09191234567',
+            violation_types='Illegal Dumping,Others',
+        ),
+    ]
+    for agency in agencies:
+        db.session.add(agency)
+    db.session.commit()
+
+
+def seed_default_admin():
+    from models import AdminUser
+    from werkzeug.security import generate_password_hash
+
+    admin_email = os.getenv('ADMIN_EMAIL', 'admin@ingat.com')
+    admin_password = os.getenv('ADMIN_PASSWORD', 'Admin@1234')
+
+    if AdminUser.query.filter_by(email=admin_email).first():
+        return
+
+    db.session.add(AdminUser(
+        email=admin_email,
+        password_hash=generate_password_hash(admin_password),
+    ))
     db.session.commit()
 
 
@@ -85,6 +136,10 @@ def create_app():
     with app.app_context():
         import models  # noqa: F401
         db.create_all()
+<<<<<<< HEAD
+=======
+        seed_default_admin()
+>>>>>>> main
         seed_default_agencies()
 
     return app

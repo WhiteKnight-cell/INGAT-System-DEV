@@ -4,6 +4,7 @@ import string
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+<<<<<<< HEAD
 from werkzeug.security import generate_password_hash, check_password_hash
 from passlib.context import CryptContext
 
@@ -14,6 +15,29 @@ from itsdangerous import URLSafeTimedSerializer
 def send_email(to_email, subject, body):
     try:
         # allow overriding SMTP settings via env
+=======
+
+from itsdangerous import URLSafeTimedSerializer
+from passlib.context import CryptContext
+from flask import current_app
+from werkzeug.security import generate_password_hash, check_password_hash
+
+
+def send_email(to_email, subject, body):
+    """Send an HTML email via SMTP.
+
+    Expects these environment variables in .env:
+    - GMAIL_USER
+    - GMAIL_APP_PASSWORD
+    Optional:
+    - MAIL_SERVER (default smtp.gmail.com)
+    - MAIL_PORT (default 587)
+    - MAIL_DEBUG (set to 1 to enable SMTP debug output)
+
+    Returns True on success, False otherwise.
+    """
+    try:
+>>>>>>> main
         mail_server = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
         mail_port = int(os.getenv('MAIL_PORT', '587'))
         mail_debug = os.getenv('MAIL_DEBUG', '0') == '1'
@@ -33,19 +57,33 @@ def send_email(to_email, subject, body):
         server = smtplib.SMTP(mail_server, mail_port, timeout=20)
         if mail_debug:
             server.set_debuglevel(1)
+<<<<<<< HEAD
         # start TLS if using common ports
+=======
+
+        # start TLS if supported
+>>>>>>> main
         try:
             server.starttls()
         except Exception:
             pass
+<<<<<<< HEAD
+=======
+
+>>>>>>> main
         server.login(gmail_user, gmail_password)
         server.send_message(msg)
         server.quit()
         return True
     except Exception as e:
+<<<<<<< HEAD
         import traceback
         print('Email error:')
         traceback.print_exc()
+=======
+        print('Email error:')
+        print(e)
+>>>>>>> main
         return False
 
 
@@ -80,11 +118,19 @@ def send_verification_email(to_email, full_name, otp_code):
 
 
 # Use passlib CryptContext to support bcrypt and fallback verification of pbkdf2_sha256.
+<<<<<<< HEAD
+=======
+# Note: passlib will choose the scheme in the hash based on the stored value.
+>>>>>>> main
 pwd_context = CryptContext(schemes=["pbkdf2_sha256", "scrypt"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
+<<<<<<< HEAD
     """Hash a password using bcrypt via passlib CryptContext."""
+=======
+    """Hash a password using the current passlib CryptContext."""
+>>>>>>> main
     return pwd_context.hash(password)
 
 
@@ -92,6 +138,10 @@ def verify_password(stored_hash: str, password: str) -> bool:
     """Verify a plaintext password against stored hash, supporting multiple schemes."""
     if not stored_hash:
         return False
+<<<<<<< HEAD
+=======
+
+>>>>>>> main
     try:
         scheme = pwd_context.identify(stored_hash)
         if scheme is not None:
@@ -99,7 +149,11 @@ def verify_password(stored_hash: str, password: str) -> bool:
     except Exception:
         pass
 
+<<<<<<< HEAD
     # Fallback: try Werkzeug's check_password_hash for legacy werkzeug hashes (scrypt, pbkdf2:sha256, etc.)
+=======
+    # Fallback for legacy Werkzeug hashes
+>>>>>>> main
     try:
         return check_password_hash(stored_hash, password)
     except Exception:
@@ -115,3 +169,71 @@ def is_bcrypt_hash(stored_hash: str) -> bool:
         return scheme in ('bcrypt', 'bcrypt_sha256')
     except Exception:
         return False
+<<<<<<< HEAD
+=======
+
+
+# Backwards-compatible legacy name (some older code may import it)
+generate_password = generate_password_hash
+
+
+def generate_complaint_letter(
+    violation_type,
+    description,
+    barangay,
+    municipality,
+    date_incident,
+    complainant_name,
+    contact_number,
+    agency_name,
+):
+    """Legacy helper kept for compatibility. Prefer services/gemini_letter.py."""
+    try:
+        import google.generativeai as genai
+
+        api_key = os.getenv('GEMINI_API_KEY', '').strip()
+        if not api_key or api_key == 'your_gemini_api_key_here':
+            raise ValueError('GEMINI_API_KEY is not configured in .env')
+
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+
+        agency_addresses = {
+            'DENR': 'Department of Environment and Natural Resources, Visayas Avenue, Diliman, Quezon City',
+            'LLDA': 'Laguna Lake Development Authority, LLDA Complex, Laguna',
+            'LGU': 'Local Government Unit Office, City Hall',
+        }
+        agency_address = agency_addresses.get(agency_name, 'Concerned Government Agency')
+
+        prompt = f"""
+        Write a formal complaint letter in English with the following details:
+
+        - Complainant Name: {complainant_name}
+        - Contact Number: {contact_number}
+        - Violation Type: {violation_type}
+        - Location: Barangay {barangay}, {municipality}
+        - Date of Incident: {date_incident}
+        - Description: {description}
+        - Addressed To: {agency_name} ({agency_address})
+
+        Format the letter professionally with:
+        1. Date (use {date_incident} as reference; letter date may be today).
+        2. Recipient agency name and address
+        3. Subject line
+        4. Formal salutation
+        5. Body paragraphs explaining the violation
+        6. Request for action
+        7. Closing with complainant name and contact number
+
+        Keep it formal, concise, and professional.
+        Do not include any placeholders or brackets.
+        Write the complete letter only — no explanations before or after.
+        """
+
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        print(f"Gemini API error: {e}")
+        return None
+
+>>>>>>> main

@@ -59,6 +59,7 @@
         }
         .char-count.error { color: #dc3545; }
         .char-count.success { color: #2D6A4F; }
+<<<<<<< HEAD
 
         /* Voice input UI */
         .voice-wave span {
@@ -80,21 +81,33 @@
             0%, 100% { transform: scaleY(0.35); opacity: 0.7; }
             50% { transform: scaleY(1.0); opacity: 1; }
         }
+=======
+>>>>>>> main
     </style>
 </head>
 <body>
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> main
 {% set f = form or {} %}
 
 <nav class="navbar navbar-dark navbar-ingat px-4 py-2">
     <span class="navbar-brand fw-bold">🌿 INGAT</span>
+<<<<<<< HEAD
     <div class="d-flex align-items-center gap-2">
         <span class="text-white small d-none d-md-inline">{{ current_user.full_name }}</span>
         <a href="{{ url_for('user.my_reports') }}" class="btn btn-outline-light btn-sm">
             <i class="bi bi-list-ul"></i> My Reports
         </a>
         <a href="{{ url_for('user.user_logout') }}" class="btn btn-outline-light btn-sm">Logout</a>
+=======
+    <div class="d-flex align-items-center gap-3">
+        <span class="text-white small">{{ current_user.full_name }}</span>
+        <a href="{{ url_for('user.user_logout') }}"
+           class="btn btn-outline-light btn-sm">Logout</a>
+>>>>>>> main
     </div>
 </nav>
 
@@ -162,7 +175,12 @@
                     <i class="bi bi-map"></i> Show on Map
                 </button>
                 <div id="map-placeholder">
+<<<<<<< HEAD
                     Click Show on Map to preview barangay location
+=======
+                    <i class="bi bi-map me-2"></i>
+                    Click "Show on Map" to preview barangay location
+>>>>>>> main
                 </div>
                 <iframe id="map-frame" allowfullscreen></iframe>
             </div>
@@ -177,6 +195,7 @@
                        value="{{ f.get('date_incident', '') }}">
             </div>
             <div class="mb-3">
+<<<<<<< HEAD
                 <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
                     <label class="form-label small fw-semibold mb-0">Description <span class="text-danger">*</span></label>
                     <div class="d-flex align-items-center gap-2">
@@ -211,11 +230,20 @@
                     </button>
                 </div>
 
+=======
+                <label class="form-label small fw-semibold">Description <span class="text-danger">*</span></label>
+                <textarea name="description" id="description" class="form-control"
+                          rows="4" placeholder="Describe the violation in detail..."
+                          required minlength="20" oninput="countChars()">{{ f.get('description', '') }}</textarea>
+>>>>>>> main
                 <div class="char-count" id="char-count">0 / minimum 20 characters</div>
             </div>
         </div>
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> main
         <div class="card p-4 mb-3">
             <div class="section-title">Photo Evidence (Optional)</div>
             <input type="file" name="photo" id="photo" class="form-control"
@@ -246,7 +274,11 @@
             return;
         }
 
+<<<<<<< HEAD
         const query = encodeURIComponent(barangay + ', ' + municipality + ', Philippines');
+=======
+        const query = encodeURIComponent(barangay + ' ' + municipality);
+>>>>>>> main
         const url = 'https://www.google.com/maps?q=' + query + '&output=embed';
 
         document.getElementById('map-placeholder').style.display = 'none';
@@ -310,6 +342,7 @@
         }
     }
 
+<<<<<<< HEAD
     function getSpeechRecognition() {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SR) return null;
@@ -434,12 +467,15 @@
         setVoiceUIActive(false);
     }
 
+=======
+>>>>>>> main
     document.addEventListener('DOMContentLoaded', function() {
         countChars();
         if (document.getElementById('barangay').value.trim() &&
             document.getElementById('municipality').value.trim()) {
             showMap();
         }
+<<<<<<< HEAD
 
         const micBtn = document.getElementById('mic-btn');
         const stopBtn = document.getElementById('stop-btn');
@@ -467,8 +503,13 @@
                 setTimeout(() => startListening(), 150);
             });
         }
+=======
+>>>>>>> main
     });
 </script>
 </body>
 </html>
+<<<<<<< HEAD
 
+=======
+>>>>>>> main

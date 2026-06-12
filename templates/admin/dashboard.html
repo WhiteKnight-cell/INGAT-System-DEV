@@ -145,6 +145,7 @@
             <i class="bi bi-grid"></i> Dashboard
         </a>
         <div class="sidebar-label">Management</div>
+<<<<<<< HEAD
         <a href="{{ url_for('admin.manage_reports') }}" class="sidebar-item">
             <i class="bi bi-file-earmark-text"></i> Manage Reports
         </a>
@@ -155,6 +156,17 @@
             <i class="bi bi-building"></i> Agencies
         </a>
 
+=======
+        <a href="#" class="sidebar-item">
+            <i class="bi bi-file-earmark-text"></i> Manage Reports
+        </a>
+        <a href="#" class="sidebar-item">
+            <i class="bi bi-people"></i> Manage Users
+        </a>
+        <a href="#" class="sidebar-item">
+            <i class="bi bi-building"></i> Agencies
+        </a>
+>>>>>>> main
         <div class="sidebar-label">Reports</div>
         <a href="#" class="sidebar-item">
             <i class="bi bi-bar-chart"></i> Analytics
@@ -227,7 +239,10 @@
                     <th>Barangay</th>
                     <th>Date</th>
                     <th>Status</th>
+<<<<<<< HEAD
                     <th></th>
+=======
+>>>>>>> main
                 </tr>
             </thead>
             <tbody>
@@ -249,12 +264,15 @@
                             <span class="badge badge-resolved">Resolved</span>
                         {% endif %}
                     </td>
+<<<<<<< HEAD
                     <td class="text-end">
                         <a href="{{ url_for('admin.report_detail', complaint_id=c.id) }}"
                            class="btn btn-sm btn-outline-success">
                             View
                         </a>
                     </td>
+=======
+>>>>>>> main
                 </tr>
                 {% endfor %}
             </tbody>
@@ -271,4 +289,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+<<<<<<< HEAD
 </html>
+=======
+</html>
+>>>>>>> main
