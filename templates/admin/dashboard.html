@@ -179,36 +179,39 @@
     </div>
 
     <!-- Summary Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="summary-card card-total position-relative">
-                <div class="card-value text-dark">{{ total }}</div>
-                <div class="card-label">Total Complaints</div>
-                <i class="bi bi-clipboard-data card-icon text-dark"></i>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="summary-card card-pending position-relative">
-                <div class="card-value" style="color:#FFC107;">{{ pending }}</div>
-                <div class="card-label">Pending / Submitted</div>
-                <i class="bi bi-hourglass-split card-icon" style="color:#FFC107;"></i>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="summary-card card-forwarded position-relative">
-                <div class="card-value" style="color:#0D6EFD;">{{ forwarded }}</div>
-                <div class="card-label">Forwarded to Agency</div>
-                <i class="bi bi-send card-icon" style="color:#0D6EFD;"></i>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="summary-card card-resolved position-relative">
-                <div class="card-value" style="color:#198754;">{{ resolved }}</div>
-                <div class="card-label">Resolved</div>
-                <i class="bi bi-check-circle card-icon" style="color:#198754;"></i>
-            </div>
+   <div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="summary-card card-total position-relative">
+            <div class="card-value text-dark">{{ total }}</div>
+            <div class="card-label">Total Complaints</div>
+            <i class="bi bi-clipboard-data card-icon text-dark"></i>
         </div>
     </div>
+    
+    <div class="col-md-3">
+        <div class="summary-card card-pending position-relative">
+            <div class="card-value" style="color: #FFC107;">{{ pending }}</div>
+            <div class="card-label">Pending / Submitted</div>
+            <i class="bi bi-hourglass-split card-icon" style="color: #FFC107;"></i>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="summary-card card-forwarded position-relative">
+            <div class="card-value" style="color: #0D6EFD;">{{ forwarded }}</div>
+            <div class="card-label">Forwarded to Agency</div>
+            <i class="bi bi-send card-icon" style="color: #0D6EFD;"></i>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="summary-card card-resolved position-relative">
+            <div class="card-value" style="color: #198754;">{{ resolved }}</div>
+            <div class="card-label">Resolved</div>
+            <i class="bi bi-check-circle card-icon" style="color: #198754;"></i>
+        </div>
+    </div>
+</div>
 
     <!-- Recent Complaints -->
     <div class="section-card">
@@ -226,13 +229,13 @@
                     <th>Date</th>
                     <th>Status</th>
                     <th></th>
- 
+                {% endif %}  
                 </tr>
             </thead>
             <tbody>
                 {% for c in recent_complaints %}
                 <tr>
-                    <td class="fw-semibold">#ING-{{ '%04d' % c.id }}</td>
+                    <td class="fw-semibold">ING-{{ '%04d' % c.id }}</td>
                     <td>{{ c.complainant.full_name }}</td>
                     <td>{{ c.violation_type }}</td>
                     <td>{{ c.barangay }}</td>
@@ -249,22 +252,16 @@
                         {% endif %}
                     </td>
                     <td class="text-end">
-                        <a href="{{ url_for('admin.report_detail', complaint_id=c.id) }}"
-                           class="btn btn-sm btn-outline-success">
-                            View
-                        </a>
+                        <a href="{{ url_for('admin.report_detail', complaint_id=c.id) }}" class="btn btn-sm btn-outline-success">View</a>
                     </td>
-
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-        {% else %}
         <div class="text-center py-4 text-muted">
             <i class="bi bi-inbox" style="font-size: 32px;"></i>
             <p class="mt-2 small">No complaints submitted yet.</p>
         </div>
-        {% endif %}
     </div>
 
 </div>

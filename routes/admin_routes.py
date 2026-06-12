@@ -47,11 +47,31 @@ def admin_login():
     return render_template('admin/login.html')
 
 
+# Import your model at the top if you haven't already
+from models import Complaint
+from sqlalchemy import func
+
 @admin_bp.route('/dashboard')
 @admin_required
 def dashboard():
-    return render_template('admin/dashboard.html')
-
+    # 1. Fetch the data for the table
+    recent_complaints = Complaint.query.order_by(Complaint.created_at.desc()).limit(10).all()
+    
+    # 2. Fetch ALL complaints to calculate counts accurately
+    all_complaints = Complaint.query.all()
+    
+    # 3. Calculate the counts by checking the status strings
+    total = len(all_complaints)
+    pending = len([c for c in all_complaints if c.status in ['Submitted', 'Pending']])
+    forwarded = len([c for c in all_complaints if c.status == 'Forwarded to Agency'])
+    resolved = len([c for c in all_complaints if c.status == 'Resolved'])
+    
+    return render_template('admin/dashboard.html', 
+                           recent_complaints=recent_complaints,
+                           total=total,
+                           pending=pending,
+                           forwarded=forwarded,
+                           resolved=resolved)
 
 
 

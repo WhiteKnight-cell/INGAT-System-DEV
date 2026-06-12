@@ -1,370 +1,403 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>INGAT - Complaint ING-{{ '%04d' % complaint.id }}</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>INGAT - Complaint ING-{{ '%04d' % complaint.id }}</title>
 
-    <title>INGAT - Report Detail</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-        body { background-color: #f0f4f0; font-family: 'Segoe UI', sans-serif; }
-        .sidebar { width: 240px; min-height: 100vh; background-color: #1A3C2E; position: fixed; top: 0; left: 0; padding-top: 20px; z-index: 100; }
-        .sidebar-brand { color: white; font-size: 20px; font-weight: 700; padding: 0 20px 20px; border-bottom: 1px solid rgba(255,255,255,.1); display: block; text-decoration: none; }
-        .sidebar-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,.4); padding: 12px 20px 4px; }
-        .sidebar-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: rgba(255,255,255,.75); text-decoration: none; font-size: 14px; border-left: 3px solid transparent; }
-        .sidebar-item:hover, .sidebar-item.active { background: rgba(255,255,255,.12); color: white; border-left-color: #52B788; }
-        .main-content { margin-left: 240px; padding: 28px; }
-        .section-card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,.07); margin-bottom: 18px; }
-        .section-title { font-size: 13px; font-weight: 700; color: #1A3C2E; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid #edf2ef; padding-bottom: 8px; margin-bottom: 14px; }
-        .letter-preview { background: #fff; border: 1px solid #dee2e6; border-radius: 10px; padding: 16px; max-height: 340px; overflow-y: auto; white-space: pre-wrap; font-size: 13px; line-height: 1.6; }
-        .timeline-item { border-left: 2px solid #d8eee3; padding-left: 14px; margin-left: 6px; padding-bottom: 12px; }
-        .timeline-item:last-child { padding-bottom: 0; }
-        .section-card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,.07); }
-        .btn-ingat { background-color: #2D6A4F; color: #fff; border: none; border-radius: 8px; font-weight: 600; }
-        .btn-ingat:hover { background-color: #1f4f3a; color: #fff; }
-        .muted-small { font-size: 12px; color: #6c757d; }
-        .badge-submitted { background: #6c757d; }
-        .badge-review { background: #FFC107; color: #000; }
-        .badge-forwarded { background: #0D6EFD; }
-        .badge-resolved { background: #198754; }
-        .timeline-item { position: relative; padding-left: 28px; }
-        .timeline-dot { position: absolute; left: 10px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: #2D6A4F; }
-        .timeline-time { font-size: 12px; color: #6c757d; }
-        .map-frame { width: 100%; height: 280px; border: 0; border-radius: 12px; }
-        textarea { resize: vertical; }
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 
-    </style>
+  <style>
+    body {
+      background-color: #f0f4f0;
+      font-family: 'Segoe UI', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Fixed left sidebar */
+    .sidebar {
+      width: 240px;
+      min-height: 100vh;
+      background-color: #1A3C2E;
+      position: fixed;
+      top: 0;
+      left: 0;
+      padding-top: 20px;
+      z-index: 100;
+    }
+
+    .sidebar-brand {
+      color: white;
+      font-size: 20px;
+      font-weight: 700;
+      padding: 0 20px 20px;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+      display: block;
+      text-decoration: none;
+    }
+
+    .sidebar-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: rgba(255,255,255,.4);
+      padding: 12px 20px 4px;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      color: rgba(255,255,255,.75);
+      text-decoration: none;
+      font-size: 14px;
+      border-left: 3px solid transparent;
+    }
+
+    .sidebar-item:hover,
+    .sidebar-item.active {
+      background: rgba(255,255,255,.12);
+      color: white;
+      border-left-color: #52B788;
+    }
+
+    /* Constrain content to viewport */
+    .main-content {
+      margin-left: 240px;
+      padding: 28px;
+      width: calc(100% - 240px);
+      max-width: 1400px;
+    }
+
+    /* Card styling */
+    .section-card {
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.07);
+      margin-bottom: 18px;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1A3C2E;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      border-bottom: 1px solid #edf2ef;
+      padding-bottom: 8px;
+      margin-bottom: 14px;
+    }
+
+    .btn-ingat {
+      background-color: #2D6A4F;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+
+    .btn-ingat:hover {
+      background-color: #1f4f3a;
+      color: #fff;
+    }
+
+    .letter-preview {
+      background: #fff;
+      border: 1px solid #dee2e6;
+      border-radius: 10px;
+      padding: 16px;
+      max-height: 340px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    textarea { resize: vertical; }
+
+    .muted-small {
+      font-size: 12px;
+      color: #6c757d;
+    }
+
+    .map-frame {
+      width: 100%;
+      height: 280px;
+      border: 0;
+      border-radius: 12px;
+    }
+
+    /* Timeline */
+    .timeline-item {
+      position: relative;
+      border-left: 2px solid #d8eee3;
+      padding-left: 28px;
+      padding-bottom: 12px;
+      margin-left: 6px;
+    }
+
+    .timeline-item:last-child {
+      padding-bottom: 0;
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: 10px;
+      top: 6px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #2D6A4F;
+    }
+
+    .timeline-time {
+      font-size: 12px;
+      color: #6c757d;
+    }
+
+    /* Avoid accidental overflow */
+    .no-overflow-x {
+      overflow-x: hidden;
+    }
+
+    /* Keep badges consistent */
+    .badge-submitted { background: #6c757d; }
+    .badge-review { background: #FFC107; color: #000; }
+    .badge-forwarded { background: #0D6EFD; }
+    .badge-resolved { background: #198754; }
+
+    /* Utility for long text */
+    .break-word {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+  </style>
 </head>
+
 <body>
-<div class="sidebar">
-    <a href="{{ url_for('admin.dashboard') }}" class="sidebar-brand">INGAT</a>
+  <div class="sidebar">
+    <span class="sidebar-brand">🌿 INGAT</span>
+
     <div class="sidebar-label">Main</div>
     <a href="{{ url_for('admin.dashboard') }}" class="sidebar-item">
-        <i class="bi bi-grid"></i> Dashboard
+      <i class="bi bi-grid"></i> Dashboard
     </a>
+
     <div class="sidebar-label">Management</div>
     <a href="{{ url_for('admin.manage_reports') }}" class="sidebar-item active">
-    <a href="{{ url_for('admin.manage_reports') }}" class="sidebar-item">
-        <i class="bi bi-file-earmark-text"></i> Manage Reports
+      <i class="bi bi-file-earmark-text"></i> Manage Reports
     </a>
+    <a href="{{ url_for('admin.manage_agencies') }}" class="sidebar-item">
+      <i class="bi bi-building"></i> Agencies
+    </a>
+    <a href="{{ url_for('admin.manage_users') }}" class="sidebar-item">
+      <i class="bi bi-people"></i> Manage Users
+    </a>
+
+    <div class="sidebar-label">Reports</div>
+    <a href="#" class="sidebar-item">
+      <i class="bi bi-bar-chart"></i> Analytics
+    </a>
+
     <div class="sidebar-label">Account</div>
     <a href="{{ url_for('admin.logout') }}" class="sidebar-item">
-        <i class="bi bi-box-arrow-right"></i> Logout
+      <i class="bi bi-box-arrow-right"></i> Logout
     </a>
-</div>
+  </div>
 
-<div class="main-content">
-    <div class="d-flex justify-content-between align-items-start mb-4">
-        <div>
-            <h4 class="fw-bold mb-0">Complaint ING-{{ '%04d' % complaint.id }}</h4>
-            <small class="text-muted">{{ complaint.violation_type }} submitted by {{ complaint.complainant.full_name }}</small>
-        </div>
-        <a href="{{ url_for('admin.manage_reports') }}" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-arrow-left"></i> Back to Reports
-        </a>
+  <div class="main-content no-overflow-x">
+    <div class="d-flex justify-content-between align-items-center mb-4 gap-3">
+      <div>
+        <h4 class="fw-bold mb-0">Complaint ING-{{ '%04d' % complaint.id }}</h4>
+        <small class="text-muted">{{ complaint.violation_type }} | {{ complaint.complainant.full_name }}</small>
+      </div>
+      <a href="{{ url_for('admin.manage_reports') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Back to Reports
+      </a>
     </div>
 
-    <div class="section-card">
-        <div class="section-title">Complaint Information</div>
-        <div class="row small g-2">
-            <div class="col-md-3 text-muted">Complainant</div>
-            <div class="col-md-9">{{ complaint.complainant.full_name }} ({{ complaint.complainant.email }})</div>
-            <div class="col-md-3 text-muted">Violation Type</div>
-            <div class="col-md-9">{{ complaint.violation_type }}</div>
-            <div class="col-md-3 text-muted">Date Submitted</div>
-            <div class="col-md-9">{{ complaint.created_at.strftime('%B %d, %Y at %I:%M %p') }}</div>
-            <div class="col-md-3 text-muted">Date of Incident</div>
-            <div class="col-md-9">{{ complaint.date_incident.strftime('%B %d, %Y') }}</div>
-            <div class="col-md-3 text-muted">Location</div>
-            <div class="col-md-9">{{ complaint.street_address }}, {{ complaint.barangay }}, {{ complaint.municipality }}</div>
-            <div class="col-md-3 text-muted">Current Status</div>
-            <div class="col-md-9">{{ complaint.status }}</div>
-            {% if complaint.agency %}
-            <div class="col-md-3 text-muted">Routed Agency</div>
-            <div class="col-md-9">{{ complaint.agency.agency_name }}</div>
+    <div class="row g-4">
+      <!-- LEFT: 7/12 -->
+      <div class="col-lg-7">
+        <div class="section-card">
+          <div class="section-title">Complaint Information</div>
+          <p class="mb-2"><strong>Description:</strong> <span class="break-word">{{ complaint.description }}</span></p>
+
+          <div class="row g-3 mt-3">
+            <div class="col-md-6">
+              <div class="muted-small mb-1">Complainant</div>
+              <div class="fw-semibold">{{ complaint.complainant.full_name }}</div>
+              <div class="muted-small">{{ complaint.complainant.email }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="muted-small mb-1">Violation Type</div>
+              <div class="fw-semibold">{{ complaint.violation_type }}</div>
+            </div>
+
+            <div class="col-md-4">
+              <div class="muted-small mb-1">Barangay</div>
+              <div class="fw-semibold">{{ complaint.barangay }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="muted-small mb-1">Municipality</div>
+              <div class="fw-semibold">{{ complaint.municipality }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="muted-small mb-1">Date Incident</div>
+              <div class="fw-semibold">{{ complaint.date_incident.strftime('%b %d, %Y') if complaint.date_incident else '' }}</div>
+            </div>
+
+            <div class="col-12">
+              <div class="muted-small mb-1">Street Address</div>
+              <div class="fw-semibold break-word">{{ complaint.street_address }}</div>
+            </div>
+
+            {% if complaint.photo_path %}
+              <div class="col-12">
+                <div class="muted-small mb-1">Photo</div>
+                <img
+                  src="{{ url_for('static', filename=complaint.photo_path.replace('static/','')) }}"
+                  alt="Complaint photo"
+                  class="img-fluid rounded">
+              </div>
             {% endif %}
+          </div>
         </div>
-        <div class="mt-3">
-            <p class="small fw-semibold text-muted mb-1">Description</p>
-            <p class="small mb-0">{{ complaint.description }}</p>
-        </div>
-    </div>
 
-    <div class="section-card">
-        <div class="section-title d-flex align-items-center justify-content-between">
+        <div class="section-card">
+          <div class="section-title">Google Maps</div>
+          <p class="small text-muted mb-3">Exact Reported Address (Admin Only): <strong>{{ complaint.street_address }}, {{ complaint.barangay }}, {{ complaint.municipality }}</strong></p>
+          {% set map_query = complaint.barangay ~ ',' ~ complaint.municipality %}
+          <iframe
+            class="map-frame"
+            loading="lazy"
+            allowfullscreen
+            referrerpolicy="no-referrer-when-downgrade"
+            src="https://www.google.com/maps?q={{ map_query|urlencode }}&output=embed">
+          </iframe>
+        </div>
+
+        <div class="section-card">
+          <div class="section-title d-flex align-items-center justify-content-between gap-2">
             <span>AI-Generated Letter</span>
             {% if complaint.letter_generated and complaint.generated_letter %}
-            <div class="d-flex gap-2">
+              <div class="d-flex gap-2 flex-wrap justify-content-end">
                 <a class="btn btn-outline-success btn-sm" href="{{ url_for('admin.download_letter_pdf', complaint_id=complaint.id) }}">
-                    <i class="bi bi-file-earmark-pdf"></i> Download PDF
+                  <i class="bi bi-file-earmark-pdf"></i> Download PDF
                 </a>
                 <a class="btn btn-outline-primary btn-sm" href="{{ url_for('admin.download_letter_docx', complaint_id=complaint.id) }}">
-                    <i class="bi bi-file-earmark-word"></i> Download DOCX
+                  <i class="bi bi-file-earmark-word"></i> Download DOCX
                 </a>
-            </div>
+              </div>
             {% endif %}
-        </div>
-        {% if complaint.letter_generated and complaint.generated_letter %}
+          </div>
+
+          {% if complaint.letter_generated and complaint.generated_letter %}
             <div class="letter-preview">{{ complaint.generated_letter }}</div>
-        {% else %}
+          {% else %}
             <p class="small text-muted mb-0">No generated letter is available for this complaint.</p>
-        {% endif %}
-    </div>
+          {% endif %}
+        </div>
+      </div>
 
-    <div class="section-card">
-        <div class="section-title">Google Maps</div>
-        <p class="small text-muted mb-2">Exact Reported Address (Admin Only): <strong>{{ complaint.street_address }}, {{ complaint.barangay }}, {{ complaint.municipality }}</strong></p>
-
-        {# Important: do NOT put street address into the iframe URL #}
-        <iframe
-            style="width: 100%; height: 320px; border: 0; border-radius: 12px;"
-            loading="lazy"
-            referrerpolicy="no-referrer-when-downgrade"
-            src="https://www.google.com/maps?q={{ complaint.barangay|urlencode }},{{ complaint.municipality|urlencode }}&output=embed">
-        </iframe>
-    </div>
-
-    <div class="section-card">
-        <div class="section-title d-flex align-items-center justify-content-between">
-            <span>Status History</span>
+      <!-- RIGHT: 5/12 -->
+      <div class="col-lg-5">
+        <div class="section-card">
+          <div class="section-title d-flex align-items-center justify-content-between gap-2">
+            <span>Status</span>
             <button class="btn btn-ingat btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#updateStatusModal">
-                <i class="bi bi-pencil-square"></i> Update Status
+              <i class="bi bi-pencil-square"></i> Update
             </button>
-        </div>
+          </div>
 
-        {% if status_history %}
-            {% for entry in status_history %}
-            <div class="timeline-item">
-                <p class="small fw-semibold mb-0">{{ entry.new_status }}</p>
-                <p class="small text-muted mb-0">{{ entry.updated_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
-                {% if entry.remarks %}
-                <p class="small mb-0 mt-1">{{ entry.remarks }}</p>
-                {% endif %}
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+              <div class="muted-small mb-1">Current status</div>
+              <div class="fw-semibold">{{ complaint.status }}</div>
             </div>
-            {% endfor %}
-        {% else %}
-            <p class="small text-muted mb-0">No status updates have been added yet.</p>
-        {% endif %}
-
-            <h4 class="fw-bold mb-0">Report Detail</h4>
-            <div class="muted-small">Reference: #ING-{{ '%04d' % complaint.id }}</div>
-        </div>
-        <div>
-            {% if complaint.status == 'Submitted' %}
+            <div>
+              {% if complaint.status == 'Submitted' %}
                 <span class="badge badge-submitted">Submitted</span>
-            {% elif complaint.status == 'Under Review' %}
+              {% elif complaint.status == 'Under Review' %}
                 <span class="badge badge-review">Under Review</span>
-            {% elif complaint.status == 'Forwarded to Agency' %}
+              {% elif complaint.status == 'Forwarded to Agency' %}
                 <span class="badge badge-forwarded">Forwarded</span>
-            {% elif complaint.status == 'Resolved' %}
+              {% elif complaint.status == 'Resolved' %}
                 <span class="badge badge-resolved">Resolved</span>
-            {% else %}
+              {% else %}
                 <span class="badge bg-secondary">{{ complaint.status }}</span>
-            {% endif %}
-        </div>
-    </div>
+              {% endif %}
+            </div>
+          </div>
 
-    <div class="row g-3">
-        <div class="col-lg-7">
-            <div class="section-card mb-3">
-                <h6 class="fw-bold">Complainant & Incident</h6>
-                <hr>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="muted-small mb-1">Complainant</div>
-                        <div class="fw-semibold">{{ complaint.complainant.full_name }}</div>
-                        <div class="muted-small">{{ complaint.complainant.email }}</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="muted-small mb-1">Violation Type</div>
-                        <div class="fw-semibold">{{ complaint.violation_type }}</div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="muted-small mb-1">Barangay</div>
-                        <div class="fw-semibold">{{ complaint.barangay }}</div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="muted-small mb-1">Municipality</div>
-                        <div class="fw-semibold">{{ complaint.municipality }}</div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="muted-small mb-1">Date Incident</div>
-                        <div class="fw-semibold">{{ complaint.date_incident.strftime('%b %d, %Y') if complaint.date_incident else '' }}</div>
-                    </div>
-                    <div class="col-12">
-                        <div class="muted-small mb-1">Street Address</div>
-                        <div class="fw-semibold">{{ complaint.street_address }}</div>
-                    </div>
-                    <div class="col-12">
-                        <div class="muted-small mb-1">Description</div>
-                        <div class="bg-light p-3 rounded">{{ complaint.description }}</div>
-                    </div>
+          <div class="mt-3">
+            <div class="section-title" style="margin-bottom: 10px;">Status History</div>
+            {% if status_history and status_history|length > 0 %}
+              {% for entry in status_history %}
+                <div class="timeline-item">
+                  <div class="timeline-dot"></div>
+                  <div class="fw-semibold">{{ entry.new_status }}</div>
+                  <small class="timeline-time">{{ entry.updated_at.strftime('%b %d, %Y %I:%M %p') }}</small>
+                  {% if entry.remarks %}
+                    <div class="small text-muted mt-1" style="white-space: pre-wrap;">{{ entry.remarks }}</div>
+                  {% endif %}
                 </div>
-
-                {% if complaint.photo_path %}
-                    <hr>
-                    <h6 class="fw-bold">Photo</h6>
-                    <img src="{{ url_for('static', filename=complaint.photo_path.replace('static/','')) }}" alt="Complaint photo" class="img-fluid rounded">
-                {% endif %}
-            </div>
-
-            <div class="section-card mb-3">
-                <h6 class="fw-bold">AI-generated Letter</h6>
-                <hr>
-                {% if complaint.generated_letter %}
-                    <div class="bg-light p-3 rounded" style="white-space: pre-wrap; max-height: 220px; overflow:auto;">
-                        {{ complaint.generated_letter }}
-                    </div>
-                    <div class="d-flex gap-2 mt-3">
-                        <a class="btn btn-outline-success btn-sm" href="{{ url_for('admin.download_letter_pdf', complaint_id=complaint.id) }}">
-                            <i class="bi bi-file-earmark-pdf"></i> Download PDF
-                        </a>
-                        <a class="btn btn-outline-primary btn-sm" href="{{ url_for('admin.download_letter_docx', complaint_id=complaint.id) }}">
-                            <i class="bi bi-file-earmark-word"></i> Download DOCX
-                        </a>
-                    </div>
-                {% else %}
-                    <div class="text-muted">No letter generated yet.</div>
-                {% endif %}
-            </div>
-
-            <div class="section-card">
-                <h6 class="fw-bold">Location Map</h6>
-                <hr>
-                <div class="muted-small mb-2">Exact Reported Address (Admin Only): {{ complaint.street_address }}, {{ complaint.barangay }}, {{ complaint.municipality }}</div>
-                {# IMPORTANT: iframe URL uses ONLY barangay+municipality. Street address never goes into URL. #}
-                {% set map_query = complaint.barangay ~ ',' ~ complaint.municipality %}
-                <iframe
-                    class="map-frame"
-                    loading="lazy"
-                    allowfullscreen
-                    referrerpolicy="no-referrer-when-downgrade"
-                    src="https://www.google.com/maps?q={{ map_query|urlencode }}&output=embed">
-                </iframe>
-            </div>
-        </div>
-
-        <div class="col-lg-5">
-            <div class="section-card mb-3">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h6 class="fw-bold mb-0">Status Update</h6>
-                        <div class="muted-small">Add remarks and save a new status.</div>
-                    </div>
-                    <button class="btn btn-ingat btn-sm" data-bs-toggle="modal" data-bs-target="#updateStatusModal">
-                        <i class="bi bi-pencil-square"></i> Update
-                    </button>
-                </div>
-
-                <hr>
-
-                <div>
-                    <div class="muted-small mb-2">Current status</div>
-                    <div class="fw-semibold">{{ complaint.status }}</div>
-                </div>
-            </div>
-
-            <div class="section-card">
-                <h6 class="fw-bold">Status History</h6>
-                <hr>
-                {% if status_history and status_history|length > 0 %}
-                    {% for entry in status_history %}
-                        <div class="timeline-item mb-3">
-                            <div class="timeline-dot"></div>
-                            <div class="fw-semibold">{{ entry.new_status }}</div>
-                            {% if entry.remarks %}
-                                <div class="text-muted" style="white-space: pre-wrap;">{{ entry.remarks }}</div>
-                            {% endif %}
-                            <div class="timeline-time">Updated: {{ entry.updated_at.strftime('%b %d, %Y %I:%M %p') if entry.updated_at else '' }}</div>
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="text-muted">No status history yet.</div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Update Status Modal -->
-<div class="modal fade" id="updateStatusModal" tabindex="-1" aria-labelledby="updateStatusModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="updateStatusModalLabel">Update Status</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <div class="small text-muted">Current Status</div>
-                    <div class="fw-semibold">{{ complaint.status }}</div>
-                </div>
-
-                <form method="POST" action="{{ url_for('admin.update_status', complaint_id=complaint.id) }}" id="updateStatusForm">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">New Status</label>
-                        <select class="form-select" name="new_status" required>
-                            {% for s in status_options %}
-                                <option value="{{ s }}" {% if s == complaint.status %}selected{% endif %}>{{ s }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="mb-2">
-                        <label class="form-label fw-semibold">Remarks</label>
-                        <textarea class="form-control" name="remarks" rows="4" placeholder="Enter remarks..." required></textarea>
-                    </div>
-
-                    <div class="text-muted small">Remarks are required to save the status.</div>
-
-                    <div class="d-flex gap-2 mt-4">
-                        <button type="submit" class="btn btn-ingat">
-                            <i class="bi bi-check2-circle"></i> Save
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <form method="POST" action="{{ url_for('admin.update_status', complaint_id=complaint.id) }}">
-        <div class="modal-header">
-          <h5 class="modal-title" id="updateStatusModalLabel">Update Complaint Status</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">New Status</label>
-            <select name="new_status" class="form-select" required>
-              {% for st in status_options %}
-                <option value="{{ st }}" {% if st == complaint.status %}selected{% endif %}>{{ st }}</option>
               {% endfor %}
-            </select>
-            <div class="form-text">Status updates follow a one-direction flow.</div>
+            {% else %}
+              <p class="small text-muted mb-0">No status updates have been added yet.</p>
+            {% endif %}
           </div>
-
-          <div class="mb-3">
-            <label class="form-label">Remarks</label>
-            <textarea name="remarks" class="form-control" rows="4" placeholder="Enter remarks..." required></textarea>
-          </div>
-
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-ingat">Save</button>
-        </div>
-      </form>
+      </div>
     </div>
   </div>
->>>>>>> main
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Update Status Modal (single source of truth) -->
+  <div class="modal fade" id="updateStatusModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <form method="POST" action="{{ url_for('admin.update_status', complaint_id=complaint.id) }}">
+          <div class="modal-header">
+            <h5 class="modal-title">Update Status</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+
+          <div class="modal-body">
+            <div class="mb-3">
+              <div class="small text-muted">Current Status</div>
+              <div class="fw-semibold">{{ complaint.status }}</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">New Status</label>
+              <select name="new_status" class="form-select" required>
+                {% for s in status_options %}
+                  <option value="{{ s }}" {% if s == complaint.status %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="mb-2">
+              <label class="form-label fw-semibold">Remarks</label>
+              <textarea name="remarks" class="form-control" rows="4" placeholder="Enter remarks..." required></textarea>
+            </div>
+
+            <div class="text-muted small">Remarks are required to save the status.</div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-ingat">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
 
