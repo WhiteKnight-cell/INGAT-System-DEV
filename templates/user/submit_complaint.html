@@ -59,9 +59,31 @@
         }
         .char-count.error { color: #dc3545; }
         .char-count.success { color: #2D6A4F; }
+
+        /* Voice input UI */
+        .voice-wave span {
+            display: inline-block;
+            width: 6px;
+            height: 16px;
+            margin-right: 3px;
+            background: #2D6A4F;
+            border-radius: 3px;
+            transform-origin: bottom;
+            animation: voiceWave 1s infinite ease-in-out;
+        }
+        .voice-wave span:nth-child(2) { animation-delay: 0.15s; }
+        .voice-wave span:nth-child(3) { animation-delay: 0.30s; }
+        .voice-wave span:nth-child(4) { animation-delay: 0.45s; }
+        .voice-wave span:nth-child(5) { animation-delay: 0.60s; }
+
+        @keyframes voiceWave {
+            0%, 100% { transform: scaleY(0.35); opacity: 0.7; }
+            50% { transform: scaleY(1.0); opacity: 1; }
+        }
     </style>
 </head>
 <body>
+
 
 {% set f = form or {} %}
 
@@ -155,13 +177,44 @@
                        value="{{ f.get('date_incident', '') }}">
             </div>
             <div class="mb-3">
-                <label class="form-label small fw-semibold">Description <span class="text-danger">*</span></label>
+                <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                    <label class="form-label small fw-semibold mb-0">Description <span class="text-danger">*</span></label>
+                    <div class="d-flex align-items-center gap-2">
+                        <select id="speech_lang" class="form-select form-select-sm" style="width:auto;" aria-label="Language">
+                            <option value="en-US" selected>English</option>
+                            <option value="fil-PH">Filipino</option>
+                        </select>
+                        <button type="button" id="mic-btn" class="btn btn-outline-primary btn-sm" title="Voice input">
+                            <i class="bi bi-mic"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="voice-status" class="text-success fw-semibold small mb-2" style="display:none;">
+                    Listening...
+                </div>
+
+                <div id="wave" aria-hidden="true" style="display:none;" class="voice-wave mb-2">
+                    <span></span><span></span><span></span><span></span><span></span>
+                </div>
+
                 <textarea name="description" id="description" class="form-control"
                           rows="4" placeholder="Describe the violation in detail..."
                           required minlength="20" oninput="countChars()">{{ f.get('description', '') }}</textarea>
+
+                <div class="d-flex gap-2 mt-2" id="voice-controls" style="display:none;">
+                    <button type="button" id="stop-btn" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-stop-circle"></i> Stop Recording
+                    </button>
+                    <button type="button" id="re-record-btn" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-repeat"></i> Re-record
+                    </button>
+                </div>
+
                 <div class="char-count" id="char-count">0 / minimum 20 characters</div>
             </div>
         </div>
+
 
         <div class="card p-4 mb-3">
             <div class="section-title">Photo Evidence (Optional)</div>
@@ -257,13 +310,165 @@
         }
     }
 
+    function getSpeechRecognition() {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) return null;
+        return new SR();
+    }
+
+    let recognition = null;
+    let listening = false;
+    let finalTranscript = '';
+
+    function setVoiceUIActive(active) {
+        const status = document.getElementById('voice-status');
+        const wave = document.getElementById('wave');
+        const controls = document.getElementById('voice-controls');
+        const micBtn = document.getElementById('mic-btn');
+
+        if (active) {
+            status.style.display = 'block';
+            wave.style.display = 'block';
+            controls.style.display = 'flex';
+            micBtn.disabled = true;
+        } else {
+            status.style.display = 'none';
+            wave.style.display = 'none';
+            controls.style.display = 'none';
+            micBtn.disabled = false;
+        }
+    }
+
+    function appendTranscript(text) {
+        const desc = document.getElementById('description');
+        const current = desc.value || '';
+        const trimmed = (text || '').trim();
+        if (!trimmed) return;
+
+        // Append with a space/newline if needed, but preserve cursor/editing by users.
+        const needsSep = current.length > 0 && !current.endsWith(' ') && !current.endsWith('\n');
+        desc.value = current + (needsSep ? ' ' : '') + trimmed;
+        countChars();
+    }
+
+    function startListening() {
+        if (listening) return;
+        finalTranscript = '';
+
+        recognition = getSpeechRecognition();
+        if (!recognition) {
+            alert('Voice input is not supported in this browser. Please use manual typing.');
+            return;
+        }
+
+        const langSelect = document.getElementById('speech_lang');
+        const lang = langSelect ? langSelect.value : 'en-US';
+
+        recognition.lang = lang;
+        recognition.interimResults = true;
+        recognition.continuous = true;
+
+        recognition.onstart = function() {
+            listening = true;
+            setVoiceUIActive(true);
+        };
+
+        recognition.onerror = function(event) {
+            console.log('SpeechRecognition error:', event);
+            listening = false;
+            setVoiceUIActive(false);
+
+            // If user blocked mic, show a short message.
+            const msg = event && event.error ? event.error : 'unknown';
+            if (msg === 'not-allowed' || msg === 'service-not-allowed') {
+                alert('Microphone permission was not granted. Allow microphone access to use voice input.');
+            }
+        };
+
+        recognition.onresult = function(event) {
+            let interim = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const res = event.results[i];
+                const transcript = res[0].transcript;
+                if (res.isFinal) {
+                    finalTranscript += transcript + ' ';
+                } else {
+                    interim += transcript;
+                }
+            }
+
+            // Live update (optional): append only final segments to avoid messing with manual edits.
+            // Interim is shown only via status label.
+            const status = document.getElementById('voice-status');
+            if (status && interim.trim().length > 0) {
+                status.textContent = 'Listening...';
+            }
+        };
+
+        recognition.onend = function() {
+            // When recognition ends naturally, append final transcript if any.
+            if (finalTranscript.trim().length > 0) {
+                appendTranscript(finalTranscript);
+            }
+            listening = false;
+            setVoiceUIActive(false);
+        };
+
+        recognition.start();
+    }
+
+    function stopListening({ appendNow = true } = {}) {
+        if (!recognition) return;
+        try {
+            recognition.stop();
+        } catch (e) {
+            // ignore
+        }
+
+        if (appendNow && finalTranscript.trim().length > 0) {
+            appendTranscript(finalTranscript);
+            finalTranscript = '';
+        }
+
+        listening = false;
+        setVoiceUIActive(false);
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         countChars();
         if (document.getElementById('barangay').value.trim() &&
             document.getElementById('municipality').value.trim()) {
             showMap();
         }
+
+        const micBtn = document.getElementById('mic-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const reRecordBtn = document.getElementById('re-record-btn');
+
+        if (micBtn) {
+            micBtn.addEventListener('click', function() {
+                // Restart listening fresh each time user clicks mic.
+                finalTranscript = '';
+                startListening();
+            });
+        }
+
+        if (stopBtn) {
+            stopBtn.addEventListener('click', function() {
+                stopListening({ appendNow: true });
+            });
+        }
+
+        if (reRecordBtn) {
+            reRecordBtn.addEventListener('click', function() {
+                // Clear transcription state and restart listening.
+                finalTranscript = '';
+                stopListening({ appendNow: false });
+                setTimeout(() => startListening(), 150);
+            });
+        }
     });
 </script>
 </body>
 </html>
+
