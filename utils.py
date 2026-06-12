@@ -6,7 +6,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 from werkzeug.security import generate_password_hash, check_password_hash
-from passlib.context import CryptContext
+
 
 from flask import current_app
 from itsdangerous import URLSafeTimedSerializer
@@ -106,11 +106,15 @@ def send_verification_email(to_email, full_name, otp_code):
     return send_email(to_email, subject, body)
 
 
-# Use passlib CryptContext to support bcrypt and fallback verification of pbkdf2_sha256.
 
-# Note: passlib will choose the scheme in the hash based on the stored value.
 
-pwd_context = CryptContext(schemes=["pbkdf2_sha256", "scrypt"], deprecated="auto")
+
+
+
+
+
+
+
 
 
 import bcrypt
@@ -130,35 +134,26 @@ def hash_password(password):
 def verify_password(stored_hash, password):
     if not stored_hash or not password:
         return False
-    return bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8'))
-
-
- 
+    
+    # Fast safety check: Bcrypt hashes MUST start with $2a$, $2b$, or $2y$
+    if not (stored_hash.startswith('$2a$') or stored_hash.startswith('$2b$') or stored_hash.startswith('$2y$')):
+        return False
+        
     try:
-        scheme = pwd_context.identify(stored_hash)
-        if scheme is not None:
-            return pwd_context.verify(password, stored_hash)
-    except Exception:
-        pass
-
-    # Fallback: try Werkzeug's check_password_hash for legacy werkzeug hashes (scrypt, pbkdf2:sha256, etc.)
-
-    # Fallback for legacy Werkzeug hashes
-    try:
-        return check_password_hash(stored_hash, password)
+        # Convert both strings back to bytes cleanly to satisfy bcrypt
+        return bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8'))
     except Exception:
         return False
 
 
 def is_bcrypt_hash(stored_hash: str) -> bool:
-    """Return True if the stored hash uses bcrypt scheme according to passlib."""
+    """Return True if the stored hash uses bcrypt scheme."""
     if not stored_hash:
         return False
-    try:
-        scheme = pwd_context.identify(stored_hash)
-        return scheme in ('bcrypt', 'bcrypt_sha256')
-    except Exception:
-        return False
+        
+    # Standard bcrypt hashes always start with these prefixes
+    valid_prefixes = ('$2a$', '$2b$', '$2y$')
+    return stored_hash.startswith(valid_prefixes)
 
 
 # Backwards-compatible legacy name (some older code may import it)

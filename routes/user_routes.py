@@ -386,7 +386,8 @@ def user_login():
             pass
 
 
-        if not user or not check_password_hash(user.password_hash, password):
+        #  NEW BCRYPT CHECK WHICH WORKS WITH YOUR UTILS FILE
+        if not user or not verify_password(user.password_hash, password):
             flash('Invalid credentials. Please try again.', 'danger')
             return render_template('user/login.html')
 
