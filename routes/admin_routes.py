@@ -50,6 +50,7 @@ def admin_login():
 # Import your model at the top if you haven't already
 from models import Complaint
 from sqlalchemy import func
+from extensions import db
 
 @admin_bp.route('/dashboard')
 @admin_required
@@ -335,24 +336,69 @@ def export_reports_csv():
     )
 
 
+@admin_bp.route('/analytics')
+@admin_required
+def analytics_report():
+    # Basic page render (extend later with real aggregation + Chart.js data endpoints)
+    from models import Complaint
+    from sqlalchemy import func
+
+    # Populate optional dropdowns
+    violation_types = sorted({c.violation_type for c in Complaint.query.all()})
+    barangays = sorted({c.barangay for c in Complaint.query.all() if c.barangay})
+
+    # Status breakdown (simple counts)
+    status_counts = (
+        db.session.query(Complaint.status, func.count(Complaint.id))
+        .group_by(Complaint.status)
+        .all()
+    )
+
+    total = sum(count for _, count in status_counts) or 1
+    # Map to required statuses order
+    status_map = {s: c for s, c in status_counts}
+    status_order = ['Submitted', 'Under Review', 'Forwarded to Agency', 'Resolved']
+    status_rows = [
+        {
+            'status': s,
+            'count': status_map.get(s, 0),
+            'percent': int(round((status_map.get(s, 0) / total) * 100)),
+        }
+        for s in status_order
+    ]
+
+    return render_template(
+        'admin/analytics_reports.html',
+        status_rows=status_rows,
+        status_order=status_order,
+        violation_types=violation_types,
+        barangays=barangays,
+        violation_type=request.args.get('violation_type', ''),
+        barangay_filter=request.args.get('barangay', ''),
+        date_from=request.args.get('date_from', ''),
+        date_to=request.args.get('date_to', ''),
+    )
+
+
 @admin_bp.route('/reports/<int:complaint_id>')
 @admin_required
 def report_detail(complaint_id):
     from models import Complaint
 
     complaint = Complaint.query.get_or_404(complaint_id)
+
     status_history = sorted(
         complaint.status_history,
         key=lambda entry: entry.updated_at,
         reverse=True,
     )
 
-
-
+    display_id = str(complaint.id).split('-')[-1]
 
     return render_template(
         'admin/report_detail.html',
         complaint=complaint,
+        display_id=display_id,
         status_history=status_history,
         status_options=STATUS_OPTIONS,
     )

@@ -211,7 +211,7 @@
   <div class="main-content no-overflow-x">
     <div class="d-flex justify-content-between align-items-center mb-4 gap-3">
       <div>
-        <h4 class="fw-bold mb-0">Complaint ING-{{ '%04d' % complaint.id }}</h4>
+Complaint #{{ (complaint.id | string).split('-')[-1] }}
         <small class="text-muted">{{ complaint.violation_type }} | {{ complaint.complainant.full_name }}</small>
       </div>
       <a href="{{ url_for('admin.manage_reports') }}" class="btn btn-outline-secondary btn-sm">
