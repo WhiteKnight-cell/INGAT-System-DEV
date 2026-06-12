@@ -95,7 +95,7 @@ def _register_form_from_request():
 
 
 def _render_register_form(form=None):
-    return render_template('user/register.html', form=form or {})
+    return render_template('user/register.html', form=form or {}, f=form or {})
 
 
 def _generate_letter_for_complaint(complaint, complainant):
