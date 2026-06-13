@@ -1,11 +1,17 @@
+# --- Consolidated Imports ---
+from flask import Blueprint, Response, render_template, redirect, url_for, flash, request, send_file, current_app
+from flask_login import login_user, logout_user, current_user
+from datetime import datetime
 
-from flask import Blueprint, Response, render_template, redirect, url_for, flash, request, send_file
-from flask_login import login_user, logout_user
+# Local imports
+from extensions import db
+from models import AdminUser, Complaint, StatusHistory
 from utils import verify_password, send_email
-from models import AdminUser  
 from routes.auth import admin_required
 
+# Blueprint definition
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
+
 
 VIOLATION_TYPES = [
     'Illegal Dumping',
@@ -65,12 +71,14 @@ def dashboard():
     total = len(all_complaints)
     pending = len([c for c in all_complaints if c.status in ['Submitted', 'Pending']])
     forwarded = len([c for c in all_complaints if c.status == 'Forwarded to Agency'])
+    under_review = Complaint.query.filter_by(status='Under Review').count()
     resolved = len([c for c in all_complaints if c.status == 'Resolved'])
     
     return render_template('admin/dashboard.html', 
                            recent_complaints=recent_complaints,
                            total=total,
                            pending=pending,
+                           under_review=under_review,
                            forwarded=forwarded,
                            resolved=resolved)
 
@@ -606,7 +614,7 @@ def download_letter_docx(complaint_id):
     docx_buffer = build_letter_docx(complaint.generated_letter, complaint.id)
     filename = f'INGAT_Complaint_{complaint.id:04d}.docx'
 
-    return __import__('flask').send_file
+    ##return __import__('flask').send_file
 
     from flask import send_file
 
@@ -622,137 +630,53 @@ def download_letter_docx(complaint_id):
 @admin_bp.route('/reports/<int:complaint_id>/update-status', methods=['POST'])
 @admin_required
 def update_status(complaint_id):
-
-    from datetime import datetime
-
-    from extensions import db
-    from models import Complaint, StatusHistory
-
     complaint = Complaint.query.get_or_404(complaint_id)
-
-
-    new_status = (request.form.get('new_status') or '').strip()
-    remarks = (request.form.get('remarks') or '').strip()
-
-    allowed_statuses = set(STATUS_OPTIONS)
-    if new_status not in allowed_statuses:
-        from models import Complaint, StatusHistory, AdminUser
-    from extensions import db
-    from flask import current_app
-    from utils import send_email
-
-    complaint = Complaint.query.get_or_404(complaint_id)
-
     new_status = request.form.get('new_status', '').strip()
     remarks = request.form.get('remarks', '').strip()
-
+    
+    # 1. Validations
     if new_status not in STATUS_OPTIONS:
-
         flash('Invalid status selected.', 'danger')
         return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
-
     if not remarks:
         flash('Remarks are required.', 'danger')
         return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
-
-
-    # One-direction flow: Submitted → Under Review → Forwarded to Agency → Resolved
-    flow_order = {
-        'Submitted': 0,
-        'Under Review': 1,
-        'Forwarded to Agency': 2,
-        'Resolved': 3,
-    }
-
-    current_status = complaint.status or 'Submitted'
-    current_idx = flow_order.get(current_status, 0)
-    new_idx = flow_order[new_status]
-
-    if new_idx < current_idx:
-        flash('Status cannot revert to a previous stage.', 'danger')
-        return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
-
-    prev_status = complaint.status
-    complaint.status = new_status
-
-    history = StatusHistory
-
-    prev_status = complaint.status
-    if prev_status == new_status:
+    if complaint.status == new_status:
         flash('Status is already set to the selected value.', 'info')
         return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
 
-    if not _can_transition(prev_status, new_status):
-        flash('Invalid status transition. Please follow the one-direction flow.', 'danger')
+    # 2. Transition logic
+    if not _can_transition(complaint.status, new_status):
+        flash('Invalid status transition.', 'danger')
         return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
 
-    # Save status history
-    sh = StatusHistory(
-
-        complaint_id=complaint.id,
-        previous_status=prev_status,
-        new_status=new_status,
-        remarks=remarks,
-
-        updated_by=__import__('flask_login').current_user.id,
-        updated_at=datetime.utcnow(),
-    )
-    db.session.add(history)
-    db.session.commit()
-
-    # Email notification to complainant (ING014)
+    # 3. Save History and Update Status
     try:
-        complainant = complaint.complainant
-        if complainant and getattr(complainant, 'email_notif', False) is True:
-            from flask import url_for
+        sh = StatusHistory(
+            complaint_id=complaint.id,
+            previous_status=complaint.status,
+            new_status=new_status,
+            remarks=remarks,
+            updated_by=current_user.id,
+            updated_at=datetime.utcnow()
+        )
+        complaint.status = new_status
+        db.session.add(sh)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred while updating.', 'danger')
+        return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
 
-            my_reports_url = url_for('user.my_reports', _external=True)
-
-            subject = f'INGAT — Complaint Status Updated: #ING-{complaint.id:04d}'
-            body = f"""
-            <p>Hi {complainant.full_name},</p>
-
-            <p>Your complaint <strong>#ING-{complaint.id:04d}</strong> has been updated.</p>
-
-            <p><strong>Updated Status:</strong> {new_status}</p>
-            <p><strong>Admin Remarks:</strong><br/>{remarks}</p>
-
-            <p><strong>My Reports:</strong> <a href="{my_reports_url}">{my_reports_url}</a></p>
-            """
-
-            send_email(complainant.email, subject, body)
-    except Exception as exc:
-        # Do not block status update if email fails (ING014)
-        print(f'Email notification failed for complaint #{complaint.id}: {exc}')
-
-
-        updated_by=current_user.id if isinstance(current_user, AdminUser) else None,
-    
-    db.session.add(sh)
-
-    # Update complaint status
-    complaint.status = new_status
-    db.session.commit()
-
-    # Email complainant notification (if email exists)
+    # 4. Email Notification
     try:
         complainant = complaint.complainant
         if complainant and complainant.email:
-            subject = 'INGAT — Complaint Status Updated'
-            body = f"""
-            <h3>INGAT — Status Update</h3>
-            <p>Hello {complainant.full_name},</p>
-            <p>Your complaint <strong>#ING-{complaint.id:04d}</strong> status has been updated to:</p>
-            <p style='font-size:18px;font-weight:700'>{new_status}</p>
-            <p><strong>Remarks:</strong></p>
-            <p style='white-space:pre-wrap'>{remarks}</p>
-            <p>Thank you.</p>
-            """
+            subject = f'INGAT — Complaint Status Updated: #{complaint.id}'
+            body = f"<p>Hello {complainant.full_name}, your complaint status is now <strong>{new_status}</strong>.</p>"
             send_email(complainant.email, subject, body)
-    except Exception:
-        # Don’t break status update if email fails
-        pass
-
+    except Exception as e:
+        print(f'Email notification failed: {e}')
 
     flash('Status updated successfully.', 'success')
     return redirect(url_for('admin.report_detail', complaint_id=complaint_id))

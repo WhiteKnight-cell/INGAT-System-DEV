@@ -100,6 +100,7 @@
         .card-total { background: #fff; border-left: 4px solid #2D6A4F; }
         .card-pending { background: #fff; border-left: 4px solid #FFC107; }
         .card-forwarded { background: #fff; border-left: 4px solid #0D6EFD; }
+        .card-review { background: #fff; border-left: 4px solid #fd7e14; }
         .card-resolved { background: #fff; border-left: 4px solid #198754; }
 
         /* Section card */
@@ -182,8 +183,9 @@
     </div>
 
     <!-- Summary Cards -->
-   <div class="row g-3 mb-4">
-    <div class="col-md-3">
+   <div class="row g-4 mb-4">
+    
+    <div class="col-md-6">
         <div class="summary-card card-total position-relative">
             <div class="card-value text-dark">{{ total }}</div>
             <div class="card-label">Total Complaints</div>
@@ -191,7 +193,7 @@
         </div>
     </div>
     
-    <div class="col-md-3">
+    <div class="col-md-6">
         <div class="summary-card card-pending position-relative">
             <div class="card-value" style="color: #FFC107;">{{ pending }}</div>
             <div class="card-label">Pending / Submitted</div>
@@ -199,15 +201,25 @@
         </div>
     </div>
 
-    <div class="col-md-3">
+    <div class="col-md-6">
+        <div class="summary-card card-review position-relative">
+            <div class="card-value" style="color: #fd7e14;">{{ under_review }}</div>
+            <div class="card-label">Under Review</div>
+            <i class="bi bi-search card-icon" style="color: #fd7e14;"></i>
+        </div>
+    </div>
+
+    <div class="col-md-6">
         <div class="summary-card card-forwarded position-relative">
             <div class="card-value" style="color: #0D6EFD;">{{ forwarded }}</div>
             <div class="card-label">Forwarded to Agency</div>
             <i class="bi bi-send card-icon" style="color: #0D6EFD;"></i>
         </div>
     </div>
+</div>
 
-    <div class="col-md-3">
+<div class="row g-4 mb-4">
+    <div class="col-md-6 offset-md-3">
         <div class="summary-card card-resolved position-relative">
             <div class="card-value" style="color: #198754;">{{ resolved }}</div>
             <div class="card-label">Resolved</div>
