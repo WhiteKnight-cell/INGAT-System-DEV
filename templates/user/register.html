@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,31 +8,49 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        body { background-color: #f0f4f0; font-family: 'Segoe UI', sans-serif; }
-        .register-card {
-            max-width: 520px;
+        body {
+            background-color: #f0f4f0;
+            font-family: 'Segoe UI', sans-serif;
+        }
 
+        .register-card {
             max-width: 480px;
             margin: 40px auto;
             border-radius: 16px;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10);
         }
+
         .logo-box {
             background-color: #2D6A4F;
             border-radius: 12px;
-            width: 48px; height: 48px;
-            display: flex; align-items: center;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
             justify-content: center;
             margin: 0 auto 10px;
         }
-        .logo-box span { color: white; font-size: 20px; font-weight: 700; }
+
+        .logo-box span {
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
         .btn-ingat {
             background-color: #2D6A4F;
-            color: white; border: none;
-            border-radius: 8px; padding: 10px;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px;
             font-weight: 600;
         }
-        .btn-ingat:hover { background-color: #1f4f3a; color: white; }
+
+        .btn-ingat:hover {
+            background-color: #1f4f3a;
+            color: white;
+        }
+
         .toggle-pw {
             cursor: pointer;
             background: #f8f9fa;
@@ -41,8 +60,15 @@
             border-radius: 0 6px 6px 0;
             color: #6c757d;
         }
-        .toggle-pw:hover { background: #e9ecef; }
-        .form-text small { color: #6c757d; }
+
+        .toggle-pw:hover {
+            background: #e9ecef;
+        }
+
+        .form-text small {
+            color: #6c757d;
+        }
+
         .pw-strength-bar {
             height: 6px;
             border-radius: 4px;
@@ -50,228 +76,288 @@
             transition: width 0.3s ease, background 0.3s ease;
             margin-top: 8px;
         }
-        .pw-strength-bar.fill-1 { width: 20%; background: #dc3545; }
-        .pw-strength-bar.fill-2 { width: 40%; background: #fd7e14; }
-        .pw-strength-bar.fill-3 { width: 60%; background: #ffc107; }
-        .pw-strength-bar.fill-4 { width: 80%; background: #198754; }
-        .pw-strength-bar.fill-5 { width: 100%; background: #0f5132; }
+
+        .pw-strength-bar.fill-1 {
+            width: 20%;
+            background: #dc3545;
+        }
+
+        .pw-strength-bar.fill-2 {
+            width: 40%;
+            background: #fd7e14;
+        }
+
+        .pw-strength-bar.fill-3 {
+            width: 60%;
+            background: #ffc107;
+        }
+
+        .pw-strength-bar.fill-4 {
+            width: 80%;
+            background: #198754;
+        }
+
+        .pw-strength-bar.fill-5 {
+            width: 100%;
+            background: #0f5132;
+        }
+
         .pw-rules {
             font-size: 12px;
             margin-top: 10px;
             color: #6c757d;
         }
+
         .pw-rule {
             display: flex;
             align-items: center;
             gap: 8px;
             margin-bottom: 4px;
         }
-        .pw-rule.valid { color: #198754; }
-        .pw-rule.invalid { color: #dc3545; }
+
+        .pw-rule.valid {
+            color: #198754;
+        }
+
+        .pw-rule.invalid {
+            color: #dc3545;
+        }
     </style>
 </head>
+
 <body>
 
+    <div class="card register-card p-4">
+        <div class="text-center mb-3">
+            <div class="logo-box"><span>I</span></div>
+            <h5 class="fw-bold mb-0">INGAT</h5>
+            <small class="text-muted">Create your account</small>
+        </div>
 
-    </style>
-</head>
-<body>
-<div class="card register-card p-4">
-    <div class="text-center mb-3">
-        <div class="logo-box"><span>I</span></div>
-        <h5 class="fw-bold mb-0">INGAT</h5>
-        <small class="text-muted">Create your account</small>
-    </div>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} py-2 small">{{ message }}</div>
-            {% endfor %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} py-2 small">{{ message }}</div>
+        {% endfor %}
         {% endif %}
-    {% endwith %}
+        {% endwith %}
 
-    <form method="POST" action="{{ url_for('user.register') }}">
-        <div class="mb-3">
-            <label class="form-label small fw-semibold">Full Name</label>
-            <input type="text" name="full_name" class="form-control"
-                   placeholder="Juan dela Cruz"
-                  value="{{ form.get('full_name', '') }}"
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label small fw-semibold">Email Address</label>
-            <input type="email" name="email" class="form-control"
-                   placeholder="juan@email.com" 
-                   value="{{ form.get('email', '') }}" required>
-        </div>
-
-        <!-- Contact Number with live validation -->
-        <div class="mb-3">
-            <label class="form-label small fw-semibold">Contact Number</label>
-            <input type="text" name="contact_number" id="contact_number" class="form-control"
-                   placeholder="09xxxxxxxxx" maxlength="11"
-                   value="{{ form.get('contact_number', '') }}"
-                   oninput="this.value = this.value.replace(/\D/g, '').slice(0, 11);" required>
-            <div class="form-text">Enter exactly 11 digits, starting with 09.</div>
-        </div>
-
-
-        
-        <div class="row mb-2">
-            <div class="col">
-                <label class="form-label small fw-semibold">Barangay</label>
-                <input type="text" name="barangay" class="form-control"
-                       placeholder="Tondo"
-                       value="{{ form.get('barangay', '') }}" required>
-
-                       
+        <form id="registerFormMain" method="POST" action="{{ url_for('user.register') }}">
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">Full Name</label>
+                <input type="text" name="full_name" id="full_name" class="form-control" placeholder="Juan dela Cruz"
+                    value="{{ form.get('full_name', '') if form else '' }}" required>
             </div>
-            <div class="col">
-                <label class="form-label small fw-semibold">Municipality</label>
-                <input type="text" name="municipality" class="form-control"
-                       placeholder="Manila"
-                       value="{{ form.get('municipality', '') }}" required>
+
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">Email Address</label>
+                <input type="email" name="email" id="email_input" class="form-control" placeholder="juan@email.com"
+                    value="{{ form.get('email', '') if form else '' }}" required>
             </div>
-        </div>
 
-        <div class="mb-3">
-
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">Contact Number</label>
+                <input type="text" name="contact_number" id="contact_number" class="form-control"
+                    placeholder="09xxxxxxxxx" maxlength="11"
+                    value="{{ form.get('contact_number', '') if form else '' }}" required>
+                <div class="form-text">Enter exactly 11 digits, starting with 09.</div>
             </div>
-        </div>
 
-        <!-- Password with eye toggle -->
-        <div class="mb-2">
-            <label class="form-label small fw-semibold">Password</label>
-            <div class="d-flex">
-                <input type="password" name="password" id="password"
-                       class="form-control" style="border-radius: 6px 0 0 6px;"
-                       placeholder="Create a strong password" required>
+            <div class="row mb-3">
+                <div class="col">
+                    <label class="form-label small fw-semibold">Barangay</label>
+                    <input type="text" name="barangay" id="barangay" class="form-control" placeholder="Tondo"
+                        value="{{ form.get('barangay', '') if form else '' }}" required>
+                </div>
+                <div class="col">
+                    <label class="form-label small fw-semibold">Municipality</label>
+                    <input type="text" name="municipality" id="municipality" class="form-control" placeholder="Manila"
+                        value="{{ form.get('municipality', '') if form else '' }}" required>
+                </div>
+            </div>
 
-                       
-                <button type="button" class="toggle-pw" onclick="togglePw('password', 'eye1')">
-                    <i id="eye1" class="bi bi-eye"></i>
+            <!-- Password with eye toggle -->
+            <div class="mb-2">
+                <label class="form-label small fw-semibold">Password</label>
+                <div class="d-flex">
+                    <input type="password" name="password" id="password" class="form-control"
+                        style="border-radius: 6px 0 0 6px;" placeholder="Create a strong password" required>
+                    <button type="button" class="toggle-pw" onclick="togglePw('password', 'eye1')">
+                        <i id="eye1" class="bi bi-eye"></i>
+                    </button>
+                </div>
+
+                <div class="pw-strength-bar" id="pw-strength-bar"></div>
+                <div class="pw-rules" id="pw-rules">
+                    <div class="pw-rule invalid" id="rule-length"><i class="bi bi-x-circle-fill"></i> At least 8
+                        characters</div>
+                    <div class="pw-rule invalid" id="rule-upper"><i class="bi bi-x-circle-fill"></i> At least one
+                        uppercase letter</div>
+                    <div class="pw-rule invalid" id="rule-lower"><i class="bi bi-x-circle-fill"></i> At least one
+                        lowercase letter</div>
+                    <div class="pw-rule invalid" id="rule-number"><i class="bi bi-x-circle-fill"></i> At least one
+                        number</div>
+                    <div class="pw-rule invalid" id="rule-special"><i class="bi bi-x-circle-fill"></i> At least one
+                        special character</div>
+                </div>
+            </div>
+
+            <!-- Confirm Password with eye toggle -->
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">Confirm Password</label>
+                <div class="d-flex">
+                    <input type="password" name="confirm_password" id="confirm_password" class="form-control"
+                        style="border-radius: 6px 0 0 6px;" placeholder="Re-enter your password" required>
+                    <button type="button" class="toggle-pw" onclick="togglePw('confirm_password','eye2')">
+                        <i id="eye2" class="bi bi-eye"></i>
+                    </button>
+                </div>
+                <div class="form-text" id="confirm-feedback"></div>
+            </div>
+
+            <div class="d-grid mb-3">
+                <button type="button" class="btn btn-ingat" id="submitBtn" onclick="interceptRegistration()">
+                    Register
                 </button>
             </div>
-            
-            <div class="pw-strength-bar" id="pw-strength-bar"></div>
-            <div class="pw-rules" id="pw-rules">
-                <div class="pw-rule invalid" id="rule-length"><i class="bi bi-x-circle-fill"></i> At least 8 characters</div>
-                <div class="pw-rule invalid" id="rule-upper"><i class="bi bi-x-circle-fill"></i> At least one uppercase letter</div>
-                <div class="pw-rule invalid" id="rule-lower"><i class="bi bi-x-circle-fill"></i> At least one lowercase letter</div>
-                <div class="pw-rule invalid" id="rule-number"><i class="bi bi-x-circle-fill"></i> At least one number</div>
-                <div class="pw-rule invalid" id="rule-special"><i class="bi bi-x-circle-fill"></i> At least one special character</div>
+
+            <div class="text-center">
+                <small>Already have an account?
+                    <a href="{{ url_for('user.user_login') }}" style="color:#2D6A4F; font-weight: 600;">Log In</a>
+                </small>
             </div>
-        </div>
-
-
-        <!-- Confirm Password with eye toggle -->
-        <div class="mb-3">
-            <label class="form-label small fw-semibold">Confirm Password</label>
-            <div class="d-flex">
-                <input type="password" name="confirm_password" id="confirm_password"
-                       class="form-control" style="border-radius: 6px 0 0 6px;"
-                       placeholder="Re-enter your password" required>
-                <button type="button" class="toggle-pw" onclick="togglePw('confirm_password','eye2')">
-                    <i id="eye2" class="bi bi-eye"></i>
-                </button>
-           </div>
-        <div class="form-text" id="confirm-feedback"></div>
-    </div> <div class="d-grid mb-3">
-        <button type="submit" class="btn btn-ingat" id="submitBtn">
-            Register
-        </button>
+        </form>
     </div>
 
-</form> </div> ```
+    <!-- 🛠️ Dynamic Registration Success Processing Modal Layout -->
+    <div class="modal fade" id="registerProcessingModal" data-bs-backdrop="static" data-bs-keyboard="false"
+        tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+                <div class="modal-body text-center py-4">
+                    <div class="text-success mb-2" style="font-size: 38px;">
+                        <i class="bi bi-person-check-fill"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1">Creating Account...</h6>
+                    <p class="text-muted small mb-0">Saving cryptographic user credentials safely.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-
-
-    function sanitizeContactNumber() {
-        const field = document.getElementById('contact_number');
-        field.value = field.value.replace(/\D/g, '').slice(0, 11);
-    }
-
-
-    function togglePw(fieldId, iconId) {
-        const field = document.getElementById(fieldId);
-        const icon = document.getElementById(iconId);
-        if (field.type === 'password') {
-            field.type = 'text';
-            icon.classList.remove('bi-eye');
-            icon.classList.add('bi-eye-slash');
-        } else {
-            field.type = 'password';
-            icon.classList.remove('bi-eye-slash');
-            icon.classList.add('bi-eye');
-        }
-    }
-
-    function setRuleState(id, valid) {
-        const el = document.getElementById(id);
-        const icon = el.querySelector('i');
-        el.classList.toggle('valid', valid);
-        el.classList.toggle('invalid', !valid);
-        icon.className = valid ? 'bi bi-check-circle-fill' : 'bi bi-x-circle-fill';
-    }
-
-    function updatePasswordGuidelines() {
-        const pw = document.getElementById('password').value;
-        const lengthValid = pw.length >= 8;
-        const upperValid = /[A-Z]/.test(pw);
-        const lowerValid = /[a-z]/.test(pw);
-        const numberValid = /[0-9]/.test(pw);
-        const specialValid = /[!@#$%^&*(),.?":{}|<>]/.test(pw);
-
-        setRuleState('rule-length', lengthValid);
-        setRuleState('rule-upper', upperValid);
-        setRuleState('rule-lower', lowerValid);
-        setRuleState('rule-number', numberValid);
-        setRuleState('rule-special', specialValid);
-
-        const score = [lengthValid, upperValid, lowerValid, numberValid, specialValid].filter(Boolean).length;
-        const bar = document.getElementById('pw-strength-bar');
-        bar.className = 'pw-strength-bar';
-        if (score > 0) {
-            bar.classList.add('fill-' + score);
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function sanitizeContactNumber() {
+            const field = document.getElementById('contact_number');
+            field.value = field.value.replace(/\D/g, '').slice(0, 11);
         }
 
-        checkConfirmPassword();
-    }
-
-    function checkConfirmPassword() {
-        const pw = document.getElementById('password').value;
-        const confirm = document.getElementById('confirm_password').value;
-        const feedback = document.getElementById('confirm-feedback');
-
-        if (!confirm) {
-            feedback.textContent = '';
-            return;
+        function togglePw(fieldId, iconId) {
+            const field = document.getElementById(fieldId);
+            const icon = document.getElementById(iconId);
+            if (field.type === 'password') {
+                field.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                field.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
         }
-        if (pw === confirm) {
-            feedback.textContent = 'Passwords match';
-            feedback.style.color = '#198754';
-        } else {
-            feedback.textContent = 'Passwords do not match';
-            feedback.style.color = '#dc3545';
-        }
-    }
 
-    document.getElementById('contact_number').addEventListener('input', sanitizeContactNumber);
-    document.getElementById('password').addEventListener('input', updatePasswordGuidelines);
-    document.getElementById('confirm_password').addEventListener('input', checkConfirmPassword);
-</script>
+        function setRuleState(id, valid) {
+            const el = document.getElementById(id);
+            const icon = el.querySelector('i');
+            el.classList.toggle('valid', valid);
+            el.classList.toggle('invalid', !valid);
+            icon.className = valid ? 'bi bi-check-circle-fill' : 'bi bi-x-circle-fill';
+        }
+
+        function updatePasswordGuidelines() {
+            const pw = document.getElementById('password').value;
+            const lengthValid = pw.length >= 8;
+            const upperValid = /[A-Z]/.test(pw);
+            const lowerValid = /[a-z]/.test(pw);
+            const numberValid = /[0-9]/.test(pw);
+            const specialValid = /[!@#$%^&*(),.?":{}|<>]/.test(pw);
+
+            setRuleState('rule-length', lengthValid);
+            setRuleState('rule-upper', upperValid);
+            setRuleState('rule-lower', lowerValid);
+            setRuleState('rule-number', numberValid);
+            setRuleState('rule-special', specialValid);
+
+            const score = [lengthValid, upperValid, lowerValid, numberValid, specialValid].filter(Boolean).length;
+            const bar = document.getElementById('pw-strength-bar');
+            bar.className = 'pw-strength-bar';
+            if (score > 0) {
+                bar.classList.add('fill-' + score);
+            }
+
+            checkConfirmPassword();
+        }
+
+        function checkConfirmPassword() {
+            const pw = document.getElementById('password').value;
+            const confirm = document.getElementById('confirm_password').value;
+            const feedback = document.getElementById('confirm-feedback');
+
+            if (!confirm) {
+                feedback.textContent = '';
+                return;
+            }
+            if (pw === confirm) {
+                feedback.textContent = 'Passwords match';
+                feedback.style.color = '#198754';
+                return true;
+            } else {
+                feedback.textContent = 'Passwords do not match';
+                feedback.style.color = '#dc3545';
+                return false;
+            }
+        }
+
+        // 🖥️ Intercept step validation logic rules
+        function interceptRegistration() {
+            const form = document.getElementById('registerFormMain');
+            const pw = document.getElementById('password').value;
+
+            // Base native check
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            // Complex validation matching checks
+            const lengthValid = pw.length >= 8;
+            const upperValid = /[A-Z]/.test(pw);
+            const lowerValid = /[a-z]/.test(pw);
+            const numberValid = /[0-9]/.test(pw);
+            const specialValid = /[!@#$%^&*(),.?":{}|<>]/.test(pw);
+
+            if (!(lengthValid && upperValid && lowerValid && numberValid && specialValid)) {
+                alert("Please follow all complexity constraints for your password.");
+                return;
+            }
+
+            if (!checkConfirmPassword()) {
+                return;
+            }
+
+            // Present registration structural modal window context
+            const procModal = new bootstrap.Modal(document.getElementById('registerProcessingModal'));
+            procModal.show();
+
+            setTimeout(() => {
+                form.submit();
+            }, 800);
+        }
+
+        document.getElementById('contact_number').addEventListener('input', sanitizeContactNumber);
+        document.getElementById('password').addEventListener('input', updatePasswordGuidelines);
+        document.getElementById('confirm_password').addEventListener('input', checkConfirmPassword);
+    </script>
 </body>
 
-
 </html>
-
-
-</script>
-</body>
-</html>
-
-

@@ -22,11 +22,11 @@ from datetime import datetime, date, timedelta
 
 from app import create_app
 from extensions import db
+# pyrefly: ignore [missing-import]
 from werkzeug.security import generate_password_hash
-from utils import hash_password
 
 
-DEMO_ADMIN_EMAIL = "admin@ingat.com"
+DEMO_ADMIN_EMAIL = "[EMAIL_ADDRESS]"
 
 DEMO_USERS = [
     {
@@ -122,7 +122,7 @@ def upsert_admin():
     if admin:
         return admin
 
-    admin = AdminUser(email=DEMO_ADMIN_EMAIL, password_hash=hash_password("Admin@1234"))
+    admin = AdminUser(email=DEMO_ADMIN_EMAIL, password_hash = hash_password("Admin@1234"))
     db.session.add(admin)
     db.session.commit()
     print("Seeded admin:", admin.email)
@@ -145,7 +145,7 @@ def upsert_users():
             contact_number=u["contact_number"],
             barangay=u["barangay"],
             municipality=u["municipality"],
-            password_hash=hash_password(u["password"]),
+            password_hash = hash_password(u["password"]),
             status=u["status"],
             email_notif=True,
             inapp_notif=True,

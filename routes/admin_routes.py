@@ -1,11 +1,11 @@
-# --- Consolidated Imports ---
+# --- Change the top of routes/admin_routes.py to look like this: ---
 from flask import Blueprint, Response, render_template, redirect, url_for, flash, request, send_file, current_app
 from flask_login import login_user, logout_user, current_user
 from datetime import datetime
 
 # Local imports
 from extensions import db
-from models import AdminUser, Complaint, StatusHistory
+from models import AdminUser, Complaint, StatusHistory, Agency # <--- 💡 ADD 'Agency' HERE!
 from utils import verify_password, send_email
 from routes.auth import admin_required
 
@@ -292,6 +292,25 @@ def _filtered_complaints_query():
 
     return query
 
+@admin_bp.route('/agencies/delete/<int:agency_id>', methods=['POST'])
+@admin_required
+def delete_agency(agency_id):
+    agency = Agency.query.get_or_404(agency_id)
+    
+    try:
+        linked_complaints = Complaint.query.filter_by(agency_id=agency.id).all()
+        for complaint in linked_complaints:
+            complaint.agency_id = None 
+            
+        db.session.delete(agency)
+        db.session.commit()
+        flash(f'Agency "{agency.agency_name}" was successfully deleted.', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred while trying to delete this agency.', 'danger')
+        
+    return redirect(url_for('admin.manage_agencies'))
 
 @admin_bp.route('/reports')
 @admin_required
@@ -391,25 +410,14 @@ def analytics_report():
 @admin_bp.route('/reports/<int:complaint_id>')
 @admin_required
 def report_detail(complaint_id):
-    from models import Complaint
-
     complaint = Complaint.query.get_or_404(complaint_id)
-
-    status_history = sorted(
-        complaint.status_history,
-        key=lambda entry: entry.updated_at,
-        reverse=True,
-    )
-
-    display_id = str(complaint.id).split('-')[-1]
-
-    return render_template(
-        'admin/report_detail.html',
-        complaint=complaint,
-        display_id=display_id,
-        status_history=status_history,
-        status_options=STATUS_OPTIONS,
-    )
+    
+    # Fetch all active agencies from your Agency database table
+    agencies = Agency.query.filter_by(status='active').all()
+    
+    return render_template('admin/report_detail.html', 
+                           complaint=complaint, 
+                           agencies=agencies) # Pass the list here
 
 
 
@@ -634,23 +642,11 @@ def update_status(complaint_id):
     new_status = request.form.get('new_status', '').strip()
     remarks = request.form.get('remarks', '').strip()
     
-    # 1. Validations
-    if new_status not in STATUS_OPTIONS:
-        flash('Invalid status selected.', 'danger')
-        return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
-    if not remarks:
-        flash('Remarks are required.', 'danger')
-        return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
-    if complaint.status == new_status:
-        flash('Status is already set to the selected value.', 'info')
-        return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
+    # READ THE SELECTED AGENCY ID FROM STEP 2
+    agency_id = request.form.get('agency_id')
+    
+    # ... keep your existing validations here ...
 
-    # 2. Transition logic
-    if not _can_transition(complaint.status, new_status):
-        flash('Invalid status transition.', 'danger')
-        return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
-
-    # 3. Save History and Update Status
     try:
         sh = StatusHistory(
             complaint_id=complaint.id,
@@ -660,13 +656,21 @@ def update_status(complaint_id):
             updated_by=current_user.id,
             updated_at=datetime.utcnow()
         )
+        
+        # LINK THE AGENCY TO THE COMPLAINT IF PROVIDED
+        if agency_id:
+            complaint.agency_id = int(agency_id)
+            
         complaint.status = new_status
         db.session.add(sh)
         db.session.commit()
+        flash('Status updated successfully.', 'success')
+        
     except Exception as e:
         db.session.rollback()
         flash('An error occurred while updating.', 'danger')
-        return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
+
+    return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
 
     # 4. Email Notification
     try:

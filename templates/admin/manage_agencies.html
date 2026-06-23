@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,126 +10,308 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 
     <style>
-        body { background-color: #f0f4f0; font-family: 'Segoe UI', sans-serif; }
-        .sidebar { width: 240px; min-height: 100vh; background-color: #1A3C2E; position: fixed; top: 0; left: 0; padding-top: 20px; z-index: 100; }
-        .sidebar-brand { color: white; font-size: 20px; font-weight: 700; padding: 0 20px 20px; border-bottom: 1px solid rgba(255,255,255,.1); display: block; text-decoration: none; }
-        .sidebar-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,.4); padding: 12px 20px 4px; }
-        .sidebar-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: rgba(255,255,255,.75); text-decoration: none; font-size: 14px; border-left: 3px solid transparent; }
-        .sidebar-item:hover, .sidebar-item.active { background: rgba(255,255,255,.12); color: white; border-left-color: #52B788; }
-        .main-content { margin-left: 240px; padding: 28px; }
-        .section-card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,.07); }
-        .btn-ingat { background-color: #2D6A4F; color: #fff; border: none; border-radius: 8px; font-weight: 600; }
-        .btn-ingat:hover { background-color: #1f4f3a; color: #fff; }
-        .table th { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: #6c757d; }
-        .table td { font-size: 13px; vertical-align: middle; }
-        .badge-active { background: #198754; }
-        .badge-inactive { background: #6c757d; }
-        .truncate { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        body {
+            background-color: #f0f4f0;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .sidebar {
+            width: 240px;
+            min-height: 100vh;
+            background-color: #1A3C2E;
+            position: fixed;
+            top: 0;
+            left: 0;
+            padding-top: 20px;
+            z-index: 100;
+        }
+
+        .sidebar-brand {
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, .1);
+            display: block;
+            text-decoration: none;
+        }
+
+        .sidebar-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, .4);
+            padding: 12px 20px 4px;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            color: rgba(255, 255, 255, .75);
+            text-decoration: none;
+            font-size: 14px;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-item:hover,
+        .sidebar-item.active {
+            background: rgba(255, 255, 255, .12);
+            color: white;
+            border-left-color: #52B788;
+        }
+
+        .main-content {
+            margin-left: 240px;
+            padding: 28px;
+        }
+
+        .section-card {
+            background: white;
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, .07);
+        }
+
+        .btn-ingat {
+            background-color: #2D6A4F;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .btn-ingat:hover {
+            background-color: #1f4f3a;
+            color: #fff;
+        }
+
+        .table th {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: #6c757d;
+        }
+
+        .table td {
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        .badge-active {
+            background: #198754;
+        }
+
+        .badge-inactive {
+            background: #6c757d;
+        }
+
+        .truncate {
+            max-width: 260px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
     </style>
 </head>
+
 <body>
-<div class="sidebar">
-    <span class="sidebar-brand">🌿 INGAT</span>
+    <div class="sidebar">
+        <span class="sidebar-brand">🌿 INGAT</span>
 
-    <div class="sidebar-label">Main</div>
-    <a href="{{ url_for('admin.dashboard') }}" class="sidebar-item">
-      <i class="bi bi-grid"></i> Dashboard
-    </a>
+        <div class="sidebar-label">Main</div>
+        <a href="{{ url_for('admin.dashboard') }}" class="sidebar-item">
+            <i class="bi bi-grid"></i> Dashboard
+        </a>
 
-    <div class="sidebar-label">Management</div>
-    <a href="{{ url_for('admin.manage_reports') }}" class="sidebar-item">
-      <i class="bi bi-file-earmark-text"></i> Manage Reports
-    </a>
-    <a href="{{ url_for('admin.manage_agencies') }}" class="sidebar-item active">
-      <i class="bi bi-building"></i> Agencies
-    </a>
-    <a href="{{ url_for('admin.manage_users') }}" class="sidebar-item">
-      <i class="bi bi-people"></i> Manage Users
-    </a>
+        <div class="sidebar-label">Management</div>
+        <a href="{{ url_for('admin.manage_reports') }}" class="sidebar-item">
+            <i class="bi bi-file-earmark-text"></i> Manage Reports
+        </a>
+        <a href="{{ url_for('admin.manage_agencies') }}" class="sidebar-item active">
+            <i class="bi bi-building"></i> Agencies
+        </a>
+        <a href="{{ url_for('admin.manage_users') }}" class="sidebar-item">
+            <i class="bi bi-people"></i> Manage Users
+        </a>
 
-    <div class="sidebar-label">Reports</div>
-    <a href="{{ url_for('admin.analytics_report') }}" class="sidebar-item">
-      <i class="bi bi-bar-chart"></i> Analytics
-    </a>
+        <div class="sidebar-label">Reports</div>
+        <a href="{{ url_for('admin.analytics_report') }}" class="sidebar-item">
+            <i class="bi bi-bar-chart"></i> Analytics
+        </a>
 
-    <div class="sidebar-label">Account</div>
-    <a href="{{ url_for('admin.logout') }}" class="sidebar-item">
-      <i class="bi bi-box-arrow-right"></i> Logout
-    </a>
-  </div>
-
-<div class="main-content">
-    <div class="d-flex justify-content-between align-items-start mb-4">
-        <div>
-            <h4 class="fw-bold mb-0">Agency Management</h4>
-            <small class="text-muted">Search and manage government agency records.</small>
-        </div>
-        <a href="{{ url_for('admin.agency_add') }}" class="btn btn-ingat btn-sm">
-            <i class="bi bi-plus-circle"></i> Add Agency
+        <div class="sidebar-label">Account</div>
+        <a href="#" class="sidebar-item" data-bs-toggle="modal" data-bs-target="#logoutModal">
+            <i class="bi bi-box-arrow-right"></i> Logout
         </a>
     </div>
 
-    <div class="section-card mb-3">
-        <form method="GET" action="{{ url_for('admin.manage_agencies') }}" class="row g-2 align-items-end">
-            <div class="col-md-8">
-                <label class="form-label small fw-semibold mb-1">Search</label>
-                <input type="text" name="q" class="form-control form-control-sm" value="{{ q or '' }}" placeholder="Agency name or email">
-            </div>
-            <div class="col-md-4 d-flex gap-2">
-                <button type="submit" class="btn btn-ingat btn-sm flex-grow-1">Apply</button>
-                <a href="{{ url_for('admin.manage_agencies') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
-            </div>
-        </form>
-    </div>
-
-    <div class="section-card p-0 overflow-hidden">
-        {% if agencies %}
-        <div class="table-responsive">
-            <table class="table table-hover mb-0 align-middle">
-                <thead class="bg-light">
-                <tr>
-                    <th>Agency Name</th>
-                    <th>Violation Types</th>
-                    <th>Contact Email</th>
-                    <th>Contact Number</th>
-                    <th>Status</th>
-                    <th class="text-end">Actions</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for a in agencies %}
-                <tr>
-                    <td class="fw-semibold">{{ a.agency_name }}</td>
-                    <td>
-                        <span class="truncate" title="{{ a.violation_types or '' }}">{{ a.violation_types or '' }}</span>
-                    </td>
-                    <td>{{ a.contact_email }}</td>
-                    <td>{{ a.contact_number }}</td>
-                    <td>
-                        {% if a.status == 'active' %}
-                            <span class="badge badge-active">Active</span>
-                        {% else %}
-                            <span class="badge badge-inactive">Inactive</span>
-                        {% endif %}
-                    </td>
-                    <td class="text-end">
-                        <a href="{{ url_for('admin.agency_edit', id=a.id) }}" class="btn btn-sm btn-outline-primary" title="Edit">
-                            <i class="bi bi-pencil-square"></i>
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-                </tbody>
-            </table>
+    <div class="main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show small py-2"
+            role="alert">
+            {{ message }}
+            <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-        {% else %}
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+                <h4 class="fw-bold mb-0">Agency Management</h4>
+                <small class="text-muted">Search and manage government agency records.</small>
+            </div>
+            <a href="{{ url_for('admin.agency_add') }}" class="btn btn-ingat btn-sm">
+                <i class="bi bi-plus-circle"></i> Add Agency
+            </a>
+        </div>
+
+        <div class="section-card mb-3">
+            <form method="GET" action="{{ url_for('admin.manage_agencies') }}" class="row g-2 align-items-end">
+                <div class="col-md-8">
+                    <label class="form-label small fw-semibold mb-1">Search</label>
+                    <input type="text" name="q" class="form-control form-control-sm" value="{{ q or '' }}"
+                        placeholder="Agency name or email">
+                </div>
+                <div class="col-md-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-ingat btn-sm flex-grow-1">Apply</button>
+                    <a href="{{ url_for('admin.manage_agencies') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
+                </div>
+            </form>
+        </div>
+
+        <div class="section-card p-0 overflow-hidden">
+            {% if agencies %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Agency Name</th>
+                            <th>Violation Types</th>
+                            <th>Contact Email</th>
+                            <th>Contact Number</th>
+                            <th>Status</th>
+                            <th class="text-end" style="padding-right: 24px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for a in agencies %}
+                        <tr>
+                            <td class="fw-semibold">{{ a.agency_name }}</td>
+                            <td>
+                                <span class="truncate" title="{{ a.violation_types or '' }}">{{ a.violation_types or ''
+                                    }}</span>
+                            </td>
+                            <td>{{ a.contact_email }}</td>
+                            <td>{{ a.contact_number }}</td>
+                            <td>
+                                {% if a.status == 'active' %}
+                                <span class="badge badge-active">Active</span>
+                                {% else %}
+                                <span class="badge badge-inactive">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end" style="padding-right: 24px;">
+                                <div class="d-inline-flex gap-2 justify-content-end align-items-center">
+
+                                    <a href="{{ url_for('admin.agency_edit', id=a.id) }}"
+                                        class="btn btn-sm btn-outline-primary" title="Edit">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+
+                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal"
+                                        data-bs-target="#deleteAgencyModal" data-agency-id="{{ a.id }}"
+                                        data-agency-name="{{ a.agency_name }}" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
             <div class="text-center py-5 text-muted">
                 <i class="bi bi-inbox" style="font-size: 34px;"></i>
                 <p class="small mt-2 mb-0">No agencies found.</p>
             </div>
-        {% endif %}
+            {% endif %}
+        </div>
     </div>
-</div>
-</body>
-</html>
 
+    <div class="modal fade" id="deleteAgencyModal" tabindex="-1" aria-labelledby="deleteAgencyModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 12px; overflow: hidden;">
+                <div class="modal-header bg-danger text-white border-0">
+                    <h5 class="modal-title small fw-bold" id="deleteAgencyModalLabel">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i> Confirm Action Deletion
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-4 text-start">
+                    <p class="mb-2">Are you sure you want to permanently delete <strong id="deleteAgencyNameTarget"
+                            class="text-dark">this record</strong>?</p>
+                    <small class="text-muted d-block"><i class="bi bi-info-circle me-1"></i> Any currently routed
+                        complaints will lose their reference parameters instantly.</small>
+                </div>
+                <div class="modal-footer bg-light border-0 py-2">
+                    <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Cancel</button>
+                    <form id="deleteAgencyActionForm" method="POST" action="">
+                        <button type="submit" class="btn btn-danger btn-sm px-3">Confirm Delete</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+                <div class="modal-body text-center py-4">
+                    <div class="text-danger mb-2" style="font-size: 32px;">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1">Logging out?</h6>
+                    <p class="text-muted small mb-4">Are you sure you want to end your active session area?</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button type="button" class="btn btn-light btn-sm px-3 fw-semibold text-secondary"
+                            data-bs-dismiss="modal">Cancel</button>
+                        <a href="{{ url_for('admin.logout') }}"
+                            class="btn btn-danger btn-sm px-3 fw-semibold">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const deleteAgencyModal = document.getElementById('deleteAgencyModal');
+            if (deleteAgencyModal) {
+                deleteAgencyModal.addEventListener('show.bs.modal', function (event) {
+                    const originatingTriggerButton = event.relatedTarget;
+
+                    // Pull backend row parameters
+                    const targetId = originatingTriggerButton.getAttribute('data-agency-id');
+                    const targetName = originatingTriggerButton.getAttribute('data-agency-name');
+
+                    // Bind content inside the display elements
+                    document.getElementById('deleteAgencyNameTarget').textContent = targetName;
+                    document.getElementById('deleteAgencyActionForm').action = `/admin/agencies/delete/${targetId}`;
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

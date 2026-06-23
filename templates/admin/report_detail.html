@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,7 +33,7 @@
       font-size: 20px;
       font-weight: 700;
       padding: 0 20px 20px;
-      border-bottom: 1px solid rgba(255,255,255,.1);
+      border-bottom: 1px solid rgba(255, 255, 255, .1);
       display: block;
       text-decoration: none;
     }
@@ -41,7 +42,7 @@
       font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 1px;
-      color: rgba(255,255,255,.4);
+      color: rgba(255, 255, 255, .4);
       padding: 12px 20px 4px;
     }
 
@@ -50,7 +51,7 @@
       align-items: center;
       gap: 10px;
       padding: 10px 20px;
-      color: rgba(255,255,255,.75);
+      color: rgba(255, 255, 255, .75);
       text-decoration: none;
       font-size: 14px;
       border-left: 3px solid transparent;
@@ -58,7 +59,7 @@
 
     .sidebar-item:hover,
     .sidebar-item.active {
-      background: rgba(255,255,255,.12);
+      background: rgba(255, 255, 255, .12);
       color: white;
       border-left-color: #52B788;
     }
@@ -76,7 +77,7 @@
       background: #ffffff;
       border-radius: 14px;
       padding: 20px;
-      box-shadow: 0 2px 12px rgba(0,0,0,.07);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, .07);
       margin-bottom: 18px;
     }
 
@@ -116,7 +117,9 @@
       line-height: 1.6;
     }
 
-    textarea { resize: vertical; }
+    textarea {
+      resize: vertical;
+    }
 
     .muted-small {
       font-size: 12px;
@@ -164,10 +167,22 @@
     }
 
     /* Keep badges consistent */
-    .badge-submitted { background: #6c757d; }
-    .badge-review { background: #FFC107; color: #000; }
-    .badge-forwarded { background: #0D6EFD; }
-    .badge-resolved { background: #198754; }
+    .badge-submitted {
+      background: #6c757d;
+    }
+
+    .badge-review {
+      background: #FFC107;
+      color: #000;
+    }
+
+    .badge-forwarded {
+      background: #0D6EFD;
+    }
+
+    .badge-resolved {
+      background: #198754;
+    }
 
     /* Utility for long text */
     .break-word {
@@ -203,7 +218,7 @@
     </a>
 
     <div class="sidebar-label">Account</div>
-    <a href="{{ url_for('admin.logout') }}" class="sidebar-item">
+    <a href="#" class="sidebar-item" data-bs-toggle="modal" data-bs-target="#logoutModal">
       <i class="bi bi-box-arrow-right"></i> Logout
     </a>
   </div>
@@ -211,7 +226,7 @@
   <div class="main-content no-overflow-x">
     <div class="d-flex justify-content-between align-items-center mb-4 gap-3">
       <div>
-Complaint #{{ complaint.id }}
+        Complaint #{{ complaint.id }}
         <small class="text-muted">{{ complaint.violation_type }} | {{ complaint.complainant.full_name }}</small>
       </div>
       <a href="{{ url_for('admin.manage_reports') }}" class="btn btn-outline-secondary btn-sm">
@@ -220,7 +235,6 @@ Complaint #{{ complaint.id }}
     </div>
 
     <div class="row g-4">
-      <!-- LEFT: 7/12 -->
       <div class="col-lg-7">
         <div class="section-card">
           <div class="section-title">Complaint Information</div>
@@ -247,7 +261,8 @@ Complaint #{{ complaint.id }}
             </div>
             <div class="col-md-4">
               <div class="muted-small mb-1">Date Incident</div>
-              <div class="fw-semibold">{{ complaint.date_incident.strftime('%b %d, %Y') if complaint.date_incident else '' }}</div>
+              <div class="fw-semibold">{{ complaint.date_incident.strftime('%b %d, %Y') if complaint.date_incident else
+                '' }}</div>
             </div>
 
             <div class="col-12">
@@ -256,59 +271,56 @@ Complaint #{{ complaint.id }}
             </div>
 
             {% if complaint.photo_path %}
-              <div class="col-12">
-                <div class="muted-small mb-1">Photo</div>
-                <img
-                  src="{{ url_for('static', filename=complaint.photo_path.replace('static/','')) }}"
-                  alt="Complaint photo"
-                  class="img-fluid rounded">
-              </div>
+            <div class="col-12">
+              <div class="muted-small mb-1">Photo</div>
+              <img src="{{ url_for('static', filename=complaint.photo_path.replace('static/','')) }}"
+                alt="Complaint photo" class="img-fluid rounded">
+            </div>
             {% endif %}
           </div>
         </div>
 
         <div class="section-card">
           <div class="section-title">Google Maps</div>
-          <p class="small text-muted mb-3">Exact Reported Address (Admin Only): <strong>{{ complaint.street_address }}, {{ complaint.barangay }}, {{ complaint.municipality }}</strong></p>
+          <p class="small text-muted mb-3">Exact Reported Address (Admin Only): <strong>{{ complaint.street_address }},
+              {{ complaint.barangay }}, {{ complaint.municipality }}</strong></p>
           {% set map_query = complaint.barangay ~ ',' ~ complaint.municipality %}
-          <iframe
-            class="map-frame"
-            loading="lazy"
-            allowfullscreen
-            referrerpolicy="no-referrer-when-downgrade"
+          <iframe class="map-frame" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"
             src="https://www.google.com/maps?q={{ map_query|urlencode }}&output=embed">
-          </iframe>
+            </footer>
         </div>
 
         <div class="section-card">
           <div class="section-title d-flex align-items-center justify-content-between gap-2">
             <span>AI-Generated Letter</span>
             {% if complaint.letter_generated and complaint.generated_letter %}
-              <div class="d-flex gap-2 flex-wrap justify-content-end">
-                <a class="btn btn-outline-success btn-sm" href="{{ url_for('admin.download_letter_pdf', complaint_id=complaint.id) }}">
-                  <i class="bi bi-file-earmark-pdf"></i> Download PDF
-                </a>
-                <a class="btn btn-outline-primary btn-sm" href="{{ url_for('admin.download_letter_docx', complaint_id=complaint.id) }}">
-                  <i class="bi bi-file-earmark-word"></i> Download DOCX
-                </a>
-              </div>
+            <div class="d-flex gap-2 flex-wrap justify-content-end">
+              <a class="btn btn-outline-success btn-sm"
+                href="{{ url_for('admin.download_letter_pdf', complaint_id=complaint.id) }}">
+                <i class="bi bi-file-earmark-pdf"></i> Download PDF
+              </a>
+              <a class="btn btn-outline-primary btn-sm"
+                href="{{ url_for('admin.download_letter_docx', complaint_id=complaint.id) }}">
+                <i class="bi bi-file-earmark-word"></i> Download DOCX
+              </a>
+            </div>
             {% endif %}
           </div>
 
           {% if complaint.letter_generated and complaint.generated_letter %}
-            <div class="letter-preview">{{ complaint.generated_letter }}</div>
+          <div class="letter-preview">{{ complaint.generated_letter }}</div>
           {% else %}
-            <p class="small text-muted mb-0">No generated letter is available for this complaint.</p>
+          <p class="small text-muted mb-0">No generated letter is available for this complaint.</p>
           {% endif %}
         </div>
       </div>
 
-      <!-- RIGHT: 5/12 -->
       <div class="col-lg-5">
         <div class="section-card">
           <div class="section-title d-flex align-items-center justify-content-between gap-2">
             <span>Status</span>
-            <button class="btn btn-ingat btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#updateStatusModal">
+            <button class="btn btn-ingat btn-sm" type="button" data-bs-toggle="modal"
+              data-bs-target="#updateStatusModal">
               <i class="bi bi-pencil-square"></i> Update
             </button>
           </div>
@@ -320,15 +332,15 @@ Complaint #{{ complaint.id }}
             </div>
             <div>
               {% if complaint.status == 'Submitted' %}
-                <span class="badge badge-submitted">Submitted</span>
+              <span class="badge badge-submitted">Submitted</span>
               {% elif complaint.status == 'Under Review' %}
-                <span class="badge badge-review">Under Review</span>
+              <span class="badge badge-review">Under Review</span>
               {% elif complaint.status == 'Forwarded to Agency' %}
-                <span class="badge badge-forwarded">Forwarded</span>
+              <span class="badge badge-forwarded">Forwarded</span>
               {% elif complaint.status == 'Resolved' %}
-                <span class="badge badge-resolved">Resolved</span>
+              <span class="badge badge-resolved">Resolved</span>
               {% else %}
-                <span class="badge bg-secondary">{{ complaint.status }}</span>
+              <span class="badge bg-secondary">{{ complaint.status }}</span>
               {% endif %}
             </div>
           </div>
@@ -336,18 +348,18 @@ Complaint #{{ complaint.id }}
           <div class="mt-3">
             <div class="section-title" style="margin-bottom: 10px;">Status History</div>
             {% if status_history and status_history|length > 0 %}
-              {% for entry in status_history %}
-                <div class="timeline-item">
-                  <div class="timeline-dot"></div>
-                  <div class="fw-semibold">{{ entry.new_status }}</div>
-                  <small class="timeline-time">{{ entry.updated_at.strftime('%b %d, %Y %I:%M %p') }}</small>
-                  {% if entry.remarks %}
-                    <div class="small text-muted mt-1" style="white-space: pre-wrap;">{{ entry.remarks }}</div>
-                  {% endif %}
-                </div>
-              {% endfor %}
+            {% for entry in status_history %}
+            <div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div class="fw-semibold">{{ entry.new_status }}</div>
+              <small class="timeline-time">{{ entry.updated_at.strftime('%b %d, %Y %I:%M %p') }}</small>
+              {% if entry.remarks %}
+              <div class="small text-muted mt-1" style="white-space: pre-wrap;">{{ entry.remarks }}</div>
+              {% endif %}
+            </div>
+            {% endfor %}
             {% else %}
-              <p class="small text-muted mb-0">No status updates have been added yet.</p>
+            <p class="small text-muted mb-0">No status updates have been added yet.</p>
             {% endif %}
           </div>
         </div>
@@ -355,11 +367,11 @@ Complaint #{{ complaint.id }}
     </div>
   </div>
 
-  <!-- Update Status Modal (single source of truth) -->
   <div class="modal fade" id="updateStatusModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
-        <form method="POST" action="{{ url_for('admin.update_status', complaint_id=complaint.id) }}">
+        <form id="statusFormMain" method="POST"
+          action="{{ url_for('admin.update_status', complaint_id=complaint.id) }}">
           <div class="modal-header">
             <h5 class="modal-title">Update Status</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -373,16 +385,29 @@ Complaint #{{ complaint.id }}
 
             <div class="mb-3">
               <label class="form-label fw-semibold">New Status</label>
-              <select name="new_status" class="form-select" required>
+              <select id="new_status_select" name="new_status" class="form-select" required>
                 {% for s in status_options %}
-                  <option value="{{ s }}" {% if s == complaint.status %}selected{% endif %}>{{ s }}</option>
+                <option value="{{ s }}" {% if s==complaint.status %}selected{% endif %}>{{ s }}</option>
                 {% endfor %}
               </select>
             </div>
 
+            <div class="mb-3" id="agency-select-container" style="display: none;">
+              <label class="form-label fw-semibold">Forward to Government Agency</label>
+              <select class="form-select" id="agency_id" name="agency_id">
+                <option value="" selected>-- Select Specialized Agency (Optional) --</option>
+                {% for agency in agencies %}
+                <option value="{{ agency.id }}">{{ agency.agency_name }} ({{ agency.violation_types }})</option>
+                {% endfor %}
+              </select>
+              <small class="text-muted">Choose which environmental agency or LGU will handle this incident
+                record.</small>
+            </div>
+
             <div class="mb-2">
               <label class="form-label fw-semibold">Remarks</label>
-              <textarea name="remarks" class="form-control" rows="4" placeholder="Enter remarks..." required></textarea>
+              <textarea id="remarks_input" name="remarks" class="form-control" rows="4" placeholder="Enter remarks..."
+                required></textarea>
             </div>
 
             <div class="text-muted small">Remarks are required to save the status.</div>
@@ -390,14 +415,103 @@ Complaint #{{ complaint.id }}
 
           <div class="modal-footer">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-ingat">Save Changes</button>
+            <button type="button" class="btn btn-ingat" onclick="triggerSaveConfirmation()">Save Changes</button>
           </div>
         </form>
       </div>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+  <div class="modal fade" id="confirmSaveModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+        <div class="modal-body text-center py-4">
+          <div class="text-warning mb-2" style="font-size: 34px;">
+            <i class="bi bi-question-circle-fill"></i>
+          </div>
+          <h6 class="fw-bold text-dark mb-1">Confirm Timeline Update?</h6>
+          <p class="text-muted small mb-4">Are you sure you want to log these changes to this record timeline?</p>
+          <div class="d-flex gap-2 justify-content-center">
+            <button type="button" class="btn btn-light btn-sm px-3 text-secondary"
+              onclick="dismissSaveConfirmation()">Cancel</button>
+            <button type="button" class="btn btn-success btn-sm px-3 fw-semibold" onclick="executeFinalSubmit()">Confirm
+              & Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
+  <div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+        <div class="modal-body text-center py-4">
+          <div class="text-danger mb-2" style="font-size: 32px;">
+            <i class="bi bi-box-arrow-right"></i>
+          </div>
+          <h6 class="fw-bold text-dark mb-1">Logging out?</h6>
+          <p class="text-muted small mb-4">Are you sure you want to end your active session area?</p>
+          <div class="d-flex gap-2 justify-content-center">
+            <button type="button" class="btn btn-light btn-sm px-3 fw-semibold text-secondary"
+              data-bs-dismiss="modal">Cancel</button>
+            <a href="{{ url_for('admin.logout') }}" class="btn btn-danger btn-sm px-3 fw-semibold">Logout</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    let statusModalInstance;
+    let confirmModalInstance;
+
+    document.addEventListener('DOMContentLoaded', function () {
+      const statusSelect = document.getElementById('new_status_select');
+      const agencyContainer = document.getElementById('agency-select-container');
+
+      // Initialize Bootstrap Modal Node Targets
+      statusModalInstance = new bootstrap.Modal(document.getElementById('updateStatusModal'));
+      confirmModalInstance = new bootstrap.Modal(document.getElementById('confirmSaveModal'));
+
+      function toggleAgencyDropdown() {
+        if (statusSelect.value === 'Forwarded to Agency') {
+          agencyContainer.style.display = 'block';
+        } else {
+          agencyContainer.style.display = 'none';
+          document.getElementById('agency_id').value = "";
+        }
+      }
+
+      statusSelect.addEventListener('change', toggleAgencyDropdown);
+      toggleAgencyDropdown();
+    });
+
+    // 🖥️ Intercept step validation logic rules
+    function triggerSaveConfirmation() {
+      const remarksField = document.getElementById('remarks_input');
+
+      // Native browser requirement handling safety rule validation check
+      if (!remarksField.value.trim()) {
+        remarksField.reportValidity();
+        return;
+      }
+
+      // Hide standard inputs and show confirmation modal window
+      statusModalInstance.hide();
+      confirmModalInstance.show();
+    }
+
+    function dismissSaveConfirmation() {
+      confirmModalInstance.hide();
+      statusModalInstance.show();
+    }
+
+    function executeFinalSubmit() {
+      document.getElementById('statusFormMain').submit();
+    }
+  </script>
+</body>
+
+</html>

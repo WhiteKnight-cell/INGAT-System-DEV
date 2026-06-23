@@ -128,18 +128,30 @@ def _generate_letter_for_complaint(complaint, complainant):
         return True, 'fallback'
 
 
+from flask import Blueprint, render_template, redirect, url_for, flash, request
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import login_user, logout_user, login_required, current_user
+import re
+
+from routes.auth import member_required
+
+user_bp = Blueprint('user', __name__, url_prefix='/user')
+
+
+# ── Register ──
 @user_bp.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         form = _register_form_from_request()
-        full_name = form['full_name']
-        email = form['email']
-        contact_number = form['contact_number']
-        barangay = form['barangay']
-        municipality = form['municipality']
-        password = form['password'].strip()
-        confirm_password = form['confirm_password'].strip()
+        full_name = form.get('full_name', '').strip()
+        email = form.get('email', '').strip()
+        contact_number = form.get('contact_number', '').strip()
+        barangay = form.get('barangay', '').strip()
+        municipality = form.get('municipality', '').strip()
+        password = form.get('password', '').strip()
+        confirm_password = form.get('confirm_password', '').strip()
 
+        # Validation checks
         if not all([full_name, email, contact_number, barangay, municipality, password, confirm_password]):
             flash('All fields are required.', 'danger')
             return _render_register_form(form)
@@ -157,109 +169,35 @@ def register():
             flash(password_error, 'danger')
             return _render_register_form(form)
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import login_user, logout_user, login_required, current_user
-import re
-
-from routes.auth import member_required
-
-user_bp = Blueprint('user', __name__, url_prefix='/user')
-
-
-# ── Register ──
-@user_bp.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        full_name = request.form.get('full_name', '').strip()
-        email = request.form.get('email', '').strip()
-        contact_number = request.form.get('contact_number', '').strip()
-        barangay = request.form.get('barangay', '').strip()
-        municipality = request.form.get('municipality', '').strip()
-        password = request.form.get('password', '').strip()
-        confirm_password = request.form.get('confirm_password', '').strip()
-
-        if not all([full_name, email, contact_number, barangay, municipality, password, confirm_password]):
-            flash('All fields are required.', 'danger')
-            return render_template('user/register.html')
-
-        if not contact_number.isdigit() or len(contact_number) != 11:
-            flash('Contact number must be exactly 11 digits.', 'danger')
-            return render_template('user/register.html')
-
-        if password != confirm_password:
-            flash('Passwords do not match.', 'danger')
-            return render_template('user/register.html')
-
-        if len(password) < 8:
-            flash('Password must be at least 8 characters.', 'danger')
-            return render_template('user/register.html')
-
-        if not re.search(r'[A-Z]', password):
-            flash('Password must contain at least one uppercase letter.', 'danger')
-            return render_template('user/register.html')
-
-        if not re.search(r'[a-z]', password):
-            flash('Password must contain at least one lowercase letter.', 'danger')
-            return render_template('user/register.html')
-
-        if not re.search(r'[0-9]', password):
-            flash('Password must contain at least one number.', 'danger')
-            return render_template('user/register.html')
-
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
-            flash('Password must contain at least one special character.', 'danger')
-            return render_template('user/register.html')
-
-        from models import User
-        from extensions import db
+        # Check if email already exists
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
-            if existing_user.status == 'pending':
-                flash(
-                    'This email is already registered but not yet verified. '
-                    'Please check your email for the OTP or request a new code.',
-                    'danger',
-                )
-            else:
-                flash('Email is already registered.', 'danger')
+            flash('Email address is already registered.', 'danger')
             return _render_register_form(form)
 
-            flash('Email is already registered.', 'danger')
-            return render_template('user/register.html')
-
-        new_user = User(
-            full_name=full_name,
-            email=email,
-            contact_number=contact_number,
-            barangay=barangay,
-            municipality=municipality,
-            status='pending',
-            password_hash=generate_password_hash(password)
-        )
-        db.session.add(new_user)
-        db.session.commit()
-
-        verification = _create_email_verification(new_user)
-        sent = _send_account_verification_email(new_user, verification.otp_code)
-
-        if sent:
-            flash(
-                'Account created successfully! An OTP has been sent to your email. '
-                'Please verify your account to continue.',
-                'success',
+        # Save to database (Assuming a helper method or direct instantiation)
+        try:
+            new_user = User(
+                full_name=full_name,
+                email=email,
+                contact_number=contact_number,
+                barangay=barangay,
+                municipality=municipality
             )
-        else:
-            flash(
-                'Account created successfully, but we could not send the verification email. '
-                'Please contact support or try registering again later.',
-                'warning',
-            )
+            new_user.set_password(password) # Uses werkzeug security hashing
+            
+            db.session.add(new_user)
+            db.session.commit()
+            
+            flash('Registration successful! Please log in.', 'success')
+            return redirect(url_for('user.user_login'))
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred while creating your account. Please try again.', 'danger')
+            return _render_register_form(form)
 
-        return redirect(url_for('user.verify_account', user_id=new_user.id))
-
+    # GET Request logic
     return _render_register_form()
-
 
 @user_bp.route('/verify/<int:user_id>', methods=['GET', 'POST'])
 def verify_account(user_id):
@@ -503,14 +441,7 @@ def reset_password(token):
 @member_required
 def submit_complaint():
     if request.method == 'POST':
-        form = _complaint_form_from_request()
-        violation_type = form['violation_type']
-        street_address = form['street_address']
-        barangay = form['barangay']
-        municipality = form['municipality']
-        date_incident = form['date_incident']
-        description = form['description'].strip()
-
+        # Safely pull form payload using request parameters
         violation_type = request.form.get('violation_type', '').strip()
         street_address = request.form.get('street_address', '').strip()
         barangay = request.form.get('barangay', '').strip()
@@ -519,93 +450,67 @@ def submit_complaint():
         description = request.form.get('description', '').strip()
         photo = request.files.get('photo')
 
-        if not violation_type:
-            flash('Please select a violation type.', 'danger')
-            return _render_submit_form(form)
+        # Re-build structured dict payload to preserve field inputs during rendering fallbacks
+        form = {
+            'violation_type': violation_type,
+            'street_address': street_address,
+            'barangay': barangay,
+            'municipality': municipality,
+            'date_incident': date_incident,
+            'description': description
+        }
 
-        if not street_address:
-            flash('Please enter a street address.', 'danger')
-            return _render_submit_form(form)
-
-        if not barangay:
-            flash('Please enter a barangay.', 'danger')
-            return _render_submit_form(form)
-
-        if not municipality:
-            flash('Please enter a municipality.', 'danger')
-            return _render_submit_form(form)
-
-        if not date_incident:
-            flash('Please select the date of incident.', 'danger')
-            return _render_submit_form(form)
-
-        if not description:
-            flash('Please enter a description of the violation.', 'danger')
+        # Field validation requirements
+        if not all([violation_type, street_address, barangay, municipality, date_incident, description]):
+            flash('Please complete all mandatory form fields.', 'danger')
             return _render_submit_form(form)
 
         if len(description) < 20:
-            flash(
-                f'Description must be at least 20 characters (you entered {len(description)}).',
-                'danger',
-            )
+            flash(f'Description must be at least 20 characters (you entered {len(description)}).', 'danger')
             return _render_submit_form(form)
 
         if violation_type not in ALLOWED_VIOLATION_TYPES:
             flash('Invalid violation type selected.', 'danger')
             return _render_submit_form(form)
 
-        from datetime import date
+        # Date evaluation conversion check
         try:
             incident_date = date.fromisoformat(date_incident)
             if incident_date > date.today():
                 flash('Date of incident cannot be a future date.', 'danger')
                 return _render_submit_form(form)
         except ValueError:
-            flash('Invalid date format.', 'danger')
+            flash('Invalid date format processing.', 'danger')
             return _render_submit_form(form)
 
-            return render_template('user/submit_complaint.html')
-        except ValueError:
-            flash('Invalid date format.', 'danger')
-            return render_template('user/submit_complaint.html')
-
+        # Photo processing routine block
         photo_path = None
         if photo and photo.filename != '':
-            import os
-            from werkzeug.utils import secure_filename
-
-            from datetime import datetime as dt
-
             allowed_extensions = {'jpg', 'jpeg', 'png'}
             ext = photo.filename.rsplit('.', 1)[-1].lower()
             if ext not in allowed_extensions:
                 flash('Photo must be JPG or PNG only.', 'danger')
                 return _render_submit_form(form)
 
-                return render_template('user/submit_complaint.html')
-
+            # Check file sizes via memory pointers
             photo.seek(0, 2)
             file_size = photo.tell()
             photo.seek(0)
             if file_size > 5 * 1024 * 1024:
-                flash('Photo must not exceed 5MB.', 'danger')
+                flash('Photo size must not exceed 5MB.', 'danger')
                 return _render_submit_form(form)
 
-            from datetime import datetime
-
+            # Build standardized secure unique path string
             filename = secure_filename(photo.filename)
-            unique_name = f'{current_user.id}_{datetime.utcnow().strftime("%Y%m%d%H%M%S")}_{filename}'
-
-            return render_template('user/submit_complaint.html')
-
-            filename = secure_filename(photo.filename)
-            unique_name = f'{current_user.id}_{dt.utcnow().strftime("%Y%m%d%H%M%S")}_{filename}'
+            timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+            unique_name = f"{current_user.id}_{timestamp}_{filename}"
 
             upload_folder = os.path.join('static', 'uploads')
             os.makedirs(upload_folder, exist_ok=True)
             photo_path = os.path.join(upload_folder, unique_name)
             photo.save(photo_path)
 
+        # Automated sorting assignment
         agency_map = {
             'Illegal Dumping': 'LGU',
             'Air Pollution': 'DENR',
@@ -614,42 +519,44 @@ def submit_complaint():
             'Others': 'LGU'
         }
         agency_name = agency_map.get(violation_type, 'LGU')
-
-        from models import Agency, Complaint
-        from extensions import db
-
         agency = Agency.query.filter_by(agency_name=agency_name).first()
         agency_id = agency.id if agency else None
 
-        new_complaint = Complaint(
-            user_id=current_user.id,
-            agency_id=agency_id,
-            violation_type=violation_type,
-            street_address=street_address,
-            barangay=barangay,
-            municipality=municipality,
-            date_incident=incident_date,
-            description=description,
-            photo_path=photo_path,
-            status='Submitted'
-        )
-        db.session.add(new_complaint)
-        db.session.commit()
+        # Build DB instance record structure
+        try:
+            new_complaint = Complaint(
+                user_id=current_user.id,
+                agency_id=agency_id,
+                violation_type=violation_type,
+                street_address=street_address,
+                barangay=barangay,
+                municipality=municipality,
+                date_incident=incident_date,
+                description=description,
+                photo_path=photo_path,
+                status='Submitted'
+            )
+            db.session.add(new_complaint)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            flash('Database save failure encountered. Please check your data input.', 'danger')
+            return _render_submit_form(form)
 
+        # Automated document rendering dispatch call
         letter_ok, letter_error = _generate_letter_for_complaint(new_complaint, current_user)
 
         if letter_error == 'fallback':
-            flash(
-                'Complaint submitted successfully. A formal letter was generated using the offline template.',
-                'info',
-            )
+            flash('Complaint submitted successfully. A formal letter was generated using the offline template.', 'info')
         elif letter_ok:
             flash('Complaint submitted successfully!', 'success')
         else:
             flash(f'Complaint saved. {letter_error}', 'warning')
 
+        # Redirect user out to confirm success snapshot
         return redirect(url_for('user.complaint_submitted', complaint_id=new_complaint.id))
 
+    # GET Request processing
     return _render_submit_form()
 
 

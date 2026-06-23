@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,16 +8,34 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        body { background-color: #f0f4f0; font-family: 'Segoe UI', sans-serif; }
-        .navbar-ingat { background-color: #2D6A4F; }
-        .card { border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+        body {
+            background-color: #f0f4f0;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .navbar-ingat {
+            background-color: #2D6A4F;
+        }
+
+        .card {
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+        }
+
         .btn-ingat {
             background-color: #2D6A4F;
-            color: white; border: none;
-            border-radius: 8px; padding: 10px;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px;
             font-weight: 600;
         }
-        .btn-ingat:hover { background-color: #1f4f3a; color: white; }
+
+        .btn-ingat:hover {
+            background-color: #1f4f3a;
+            color: white;
+        }
+
         .section-title {
             font-size: 13px;
             font-weight: 700;
@@ -27,6 +46,7 @@
             padding-bottom: 6px;
             border-bottom: 2px solid #e8f4ee;
         }
+
         #map-placeholder {
             background: #e8f4ee;
             border: 1px dashed #2D6A4F;
@@ -38,6 +58,7 @@
             color: #2D6A4F;
             font-size: 13px;
         }
+
         #map-frame {
             width: 100%;
             height: 300px;
@@ -45,6 +66,7 @@
             border: none;
             display: none;
         }
+
         .photo-preview {
             max-width: 100%;
             max-height: 200px;
@@ -52,13 +74,20 @@
             display: none;
             margin-top: 10px;
         }
+
         .char-count {
             font-size: 11px;
             color: #6c757d;
             text-align: right;
         }
-        .char-count.error { color: #dc3545; }
-        .char-count.success { color: #2D6A4F; }
+
+        .char-count.error {
+            color: #dc3545;
+        }
+
+        .char-count.success {
+            color: #2D6A4F;
+        }
 
         /* Voice input UI */
         .voice-wave span {
@@ -71,412 +100,439 @@
             transform-origin: bottom;
             animation: voiceWave 1s infinite ease-in-out;
         }
-        .voice-wave span:nth-child(2) { animation-delay: 0.15s; }
-        .voice-wave span:nth-child(3) { animation-delay: 0.30s; }
-        .voice-wave span:nth-child(4) { animation-delay: 0.45s; }
-        .voice-wave span:nth-child(5) { animation-delay: 0.60s; }
 
-        @keyframes voiceWave {
-            0%, 100% { transform: scaleY(0.35); opacity: 0.7; }
-            50% { transform: scaleY(1.0); opacity: 1; }
+        .voice-wave span:nth-child(2) {
+            animation-delay: 0.15s;
         }
 
+        .voice-wave span:nth-child(3) {
+            animation-delay: 0.30s;
+        }
+
+        .voice-wave span:nth-child(4) {
+            animation-delay: 0.45s;
+        }
+
+        .voice-wave span:nth-child(5) {
+            animation-delay: 0.60s;
+        }
+
+        @keyframes voiceWave {
+
+            0%,
+            100% {
+                transform: scaleY(0.35);
+                opacity: 0.7;
+            }
+
+            50% {
+                transform: scaleY(1.0);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
+
 <body>
 
+    {% set f = form or {} %}
 
+    <nav class="navbar navbar-dark navbar-ingat px-4 py-2">
+        <span class="navbar-brand fw-bold">🌿 INGAT</span>
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-white small d-none d-md-inline">{{ current_user.full_name }}</span>
+            <a href="{{ url_for('user.my_reports') }}" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-list-ul"></i> My Reports
+            </a>
+            <a href="{{ url_for('user.user_logout') }}" class="btn btn-outline-light btn-sm">Logout</a>
+        </div>
+    </nav>
 
-{% set f = form or {} %}
+    <div class="container py-4" style="max-width: 700px;">
+        <h4 class="fw-bold mb-1">Submit a Complaint</h4>
+        <p class="text-muted small mb-4">Report an environmental violation in your area.</p>
 
-<nav class="navbar navbar-dark navbar-ingat px-4 py-2">
-    <span class="navbar-brand fw-bold">🌿 INGAT</span>
-    <div class="d-flex align-items-center gap-2">
-        <span class="text-white small d-none d-md-inline">{{ current_user.full_name }}</span>
-        <a href="{{ url_for('user.my_reports') }}" class="btn btn-outline-light btn-sm">
-            <i class="bi bi-list-ul"></i> My Reports
-        </a>
-    <div class="d-flex align-items-center gap-3">
-        <a href="{{ url_for('user.user_logout') }}"
-           class="btn btn-outline-light btn-sm">Logout</a>
-    </div>
-</nav>
-
-<div class="container py-4" style="max-width: 700px;">
-    <h4 class="fw-bold mb-1">Submit a Complaint</h4>
-    <p class="text-muted small mb-4">Report an environmental violation in your area.</p>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} py-2 small">{{ message }}</div>
-            {% endfor %}
+        {% for category, message in messages %}
+        <div
+            class="alert alert-{{ category if category != 'error' else 'danger' }} py-2 small alert-dismissible fade show">
+            {{ message }}
+            <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
         {% endif %}
-    {% endwith %}
+        {% endwith %}
 
-    <form method="POST" action="{{ url_for('user.submit_complaint') }}"
-          enctype="multipart/form-data" id="complaint-form" novalidate
-          onsubmit="return validateComplaintForm()">
+        <form method="POST" action="{{ url_for('user.submit_complaint') }}" enctype="multipart/form-data"
+            id="complaint-form" novalidate>
 
-        <div class="card p-4 mb-3">
-            <div class="section-title">Violation Details</div>
-            <div class="mb-3">
-                <label class="form-label small fw-semibold">Violation Type <span class="text-danger">*</span></label>
-                <select name="violation_type" id="violation_type" class="form-select" required>
-                    <option value="" disabled {% if not f.get('violation_type') %}selected{% endif %}>
-                        Select violation type
-                    </option>
-                    {% for vt in ['Illegal Dumping', 'Air Pollution', 'Water Pollution', 'Illegal Logging', 'Others'] %}
-                    <option value="{{ vt }}" {% if f.get('violation_type') == vt %}selected{% endif %}>{{ vt }}</option>
-                    {% endfor %}
-                </select>
-                <div class="form-text">The complaint will be automatically routed to the correct agency.</div>
-            </div>
-        </div>
-
-        <div class="card p-4 mb-3">
-            <div class="section-title">Location</div>
-            <div class="mb-2">
-                <label class="form-label small fw-semibold">Street Address <span class="text-danger">*</span></label>
-                <input type="text" name="street_address" id="street_address"
-                       class="form-control" placeholder="123 Rizal St." required
-                       value="{{ f.get('street_address', '') }}">
-                <div class="form-text text-warning small">
-                    Street address is for admin reference only — never shown on the map.
-                </div>
-            </div>
-            <div class="row mb-2">
-                <div class="col">
-                    <label class="form-label small fw-semibold">Barangay <span class="text-danger">*</span></label>
-                    <input type="text" name="barangay" id="barangay"
-                           class="form-control" placeholder="Tondo" required
-                           value="{{ f.get('barangay', '') }}">
-                </div>
-                <div class="col">
-                    <label class="form-label small fw-semibold">Municipality <span class="text-danger">*</span></label>
-                    <input type="text" name="municipality" id="municipality"
-                           class="form-control" placeholder="Manila" required
-                           value="{{ f.get('municipality', '') }}">
+            <div class="card p-4 mb-3">
+                <div class="section-title">Violation Details</div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Violation Type <span
+                            class="text-danger">*</span></label>
+                    <select name="violation_type" id="violation_type" class="form-select" required>
+                        <option value="" disabled {% if not f.get('violation_type') %}selected{% endif %}>
+                            Select violation type
+                        </option>
+                        {% for vt in ['Illegal Dumping', 'Air Pollution', 'Water Pollution', 'Illegal Logging',
+                        'Others'] %}
+                        <option value="{{ vt }}" {% if f.get('violation_type')==vt %}selected{% endif %}>{{ vt }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">The complaint will be automatically routed to the correct agency.</div>
                 </div>
             </div>
 
-            <div class="mb-2">
-                <button type="button" class="btn btn-outline-success btn-sm mb-2"
-                        onclick="showMap()">
-                    <i class="bi bi-map"></i> Show on Map
-                </button>
-                <div id="map-placeholder">
-                   Click Show on Map to preview barangay location
-                    <i class="bi bi-map me-2"></i>
-                    Click "Show on Map" to preview barangay location
+            <div class="card p-4 mb-3">
+                <div class="section-title">Location</div>
+                <div class="mb-2">
+                    <label class="form-label small fw-semibold">Street Address <span
+                            class="text-danger">*</span></label>
+                    <input type="text" name="street_address" id="street_address" class="form-control"
+                        placeholder="123 Rizal St." required value="{{ f.get('street_address', '') }}">
+                    <div class="form-text text-warning small">
+                        Street address is for admin reference only — never shown on the map.
+                    </div>
                 </div>
-                <iframe id="map-frame" allowfullscreen></iframe>
-            </div>
-        </div>
-
-        <div class="card p-4 mb-3">
-            <div class="section-title">Incident Details</div>
-            <div class="mb-3">
-                <label class="form-label small fw-semibold">Date of Incident <span class="text-danger">*</span></label>
-                <input type="date" name="date_incident" id="date_incident"
-                       class="form-control" required
-                       value="{{ f.get('date_incident', '') }}">
-            </div>
-            <div class="mb-3">
-                <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
-                    <label class="form-label small fw-semibold mb-0">Description <span class="text-danger">*</span></label>
-                    <div class="d-flex align-items-center gap-2">
-                        <select id="speech_lang" class="form-select form-select-sm" style="width:auto;" aria-label="Language">
-                            <option value="en-US" selected>English</option>
-                            <option value="fil-PH">Filipino</option>
-                        </select>
-                        <button type="button" id="mic-btn" class="btn btn-outline-primary btn-sm" title="Voice input">
-                            <i class="bi bi-mic"></i>
-                        </button>
+                <div class="row mb-2">
+                    <div class="col">
+                        <label class="form-label small fw-semibold">Barangay <span class="text-danger">*</span></label>
+                        <input type="text" name="barangay" id="barangay" class="form-control" placeholder="Tondo"
+                            required value="{{ f.get('barangay', '') }}">
+                    </div>
+                    <div class="col">
+                        <label class="form-label small fw-semibold">Municipality <span
+                                class="text-danger">*</span></label>
+                        <input type="text" name="municipality" id="municipality" class="form-control"
+                            placeholder="Manila" required value="{{ f.get('municipality', '') }}">
                     </div>
                 </div>
 
-                <div id="voice-status" class="text-success fw-semibold small mb-2" style="display:none;">
-                    Listening...
-                </div>
-
-                <div id="wave" aria-hidden="true" style="display:none;" class="voice-wave mb-2">
-                    <span></span><span></span><span></span><span></span><span></span>
-                </div>
-
-                <textarea name="description" id="description" class="form-control"
-                          rows="4" placeholder="Describe the violation in detail..."
-                          required minlength="20" oninput="countChars()">{{ f.get('description', '') }}</textarea>
-
-                <div class="d-flex gap-2 mt-2" id="voice-controls" style="display:none;">
-                    <button type="button" id="stop-btn" class="btn btn-outline-danger btn-sm">
-                        <i class="bi bi-stop-circle"></i> Stop Recording
+                <div class="mb-2">
+                    <button type="button" class="btn btn-outline-success btn-sm mb-2" onclick="showMap()">
+                        <i class="bi bi-map"></i> Show on Map
                     </button>
-                    <button type="button" id="re-record-btn" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-arrow-repeat"></i> Re-record
-                    </button>
+                    <div id="map-placeholder">
+                        <i class="bi bi-map me-2"></i> Click "Show on Map" to preview barangay location
+                    </div>
+                    <iframe id="map-frame" allowfullscreen></iframe>
                 </div>
+            </div>
 
-                <div class="char-count" id="char-count">0 / minimum 20 characters</div>
+            <div class="card p-4 mb-3">
+                <div class="section-title">Incident Details</div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Date of Incident <span
+                            class="text-danger">*</span></label>
+                    <input type="date" name="date_incident" id="date_incident" class="form-control" required
+                        value="{{ f.get('date_incident', '') }}">
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                        <label class="form-label small fw-semibold mb-0">Description <span
+                                class="text-danger">*</span></label>
+                        <div class="d-flex align-items-center gap-2">
+                            <select id="speech_lang" class="form-select form-select-sm" style="width:auto;"
+                                aria-label="Language">
+                                <option value="en-US" selected>English</option>
+                                <option value="fil-PH">Filipino</option>
+                            </select>
+                            <button type="button" id="mic-btn" class="btn btn-outline-primary btn-sm"
+                                title="Voice input">
+                                <i class="bi bi-mic"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="voice-status" class="text-success fw-semibold small mb-2" style="display:none;">
+                        Listening...
+                    </div>
+
+                    <div id="wave" aria-hidden="true" style="display:none;" class="voice-wave mb-2">
+                        <span></span><span></span><span></span><span></span><span></span>
+                    </div>
+
+                    <textarea name="description" id="description" class="form-control" rows="4"
+                        placeholder="Describe the violation in detail..." required minlength="20"
+                        oninput="countChars()">{{ f.get('description', '') }}</textarea>
+
+                    <div class="d-flex gap-2 mt-2" id="voice-controls" style="display:none;">
+                        <button type="button" id="stop-btn" class="btn btn-outline-danger btn-sm">
+                            <i class="bi bi-stop-circle"></i> Stop Recording
+                        </button>
+                        <button type="button" id="re-record-btn" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-repeat"></i> Re-record
+                        </button>
+                    </div>
+
+                    <div class="char-count" id="char-count">0 / minimum 20 characters</div>
+                </div>
+            </div>
+
+            <div class="card p-4 mb-3">
+                <div class="section-title">Photo Evidence (Optional)</div>
+                <input type="file" name="photo" id="photo" class="form-control" accept=".jpg,.jpeg,.png"
+                    onchange="previewPhoto()">
+                <div class="form-text">JPG or PNG only. Maximum 5MB.</div>
+                <img id="photo-preview" class="photo-preview" src="#" alt="Photo preview">
+            </div>
+
+            <div class="d-grid">
+                <button type="button" class="btn btn-ingat btn-lg" onclick="triggerConfirmationWorkflow()">
+                    <i class="bi bi-send"></i> Submit Complaint
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="modal fade" id="complaintConfirmModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 14px;">
+                <div class="modal-body p-4 text-center">
+                    <div class="text-success mb-3" style="font-size: 42px;">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-2">Confirm Report Submission</h5>
+                    <p class="text-muted small mb-4 px-2">
+                        Are you sure you want to submit this case details? It will be audited and processed directly by
+                        designated local ecosystem preservation units.
+                    </p>
+
+                    <div class="bg-light p-3 rounded-3 text-start mb-4 small border">
+                        <div class="mb-2"><strong>Violation:</strong> <span id="summary-violation"
+                                class="text-muted"></span></div>
+                        <div><strong>Location:</strong> <span id="summary-location" class="text-muted"></span></div>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <button type="button" class="btn btn-light border w-100 fw-semibold py-2"
+                                data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                        <div class="col-6">
+                            <button type="button" class="btn btn-ingat w-100 py-2" id="confirmSubmitButton"
+                                onclick="submitFinalComplaintForm()">Confirm & Send</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+    </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('date_incident').max = new Date().toISOString().split('T')[0];
 
-        <div class="card p-4 mb-3">
-            <div class="section-title">Photo Evidence (Optional)</div>
-            <input type="file" name="photo" id="photo" class="form-control"
-                   accept=".jpg,.jpeg,.png" onchange="previewPhoto()">
-            <div class="form-text">JPG or PNG only. Maximum 5MB.</div>
-            <img id="photo-preview" class="photo-preview" src="#" alt="Photo preview">
-        </div>
+        function showMap() {
+            const barangay = document.getElementById('barangay').value.trim();
+            const municipality = document.getElementById('municipality').value.trim();
 
-        <div class="d-grid">
-            <button type="submit" class="btn btn-ingat btn-lg">
-                <i class="bi bi-send"></i> Submit Complaint
-            </button>
-        </div>
-
-    </form>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    document.getElementById('date_incident').max = new Date().toISOString().split('T')[0];
-
-    function showMap() {
-        const barangay = document.getElementById('barangay').value.trim();
-        const municipality = document.getElementById('municipality').value.trim();
-
-        if (!barangay || !municipality) {
-            alert('Please enter a Barangay and Municipality to show the map.');
-            return;
-        }
-
-        const query = encodeURIComponent(barangay + ', ' + municipality + ', Philippines');
-        const url = 'https://www.google.com/maps?q=' + query + '&output=embed';
-
-        document.getElementById('map-placeholder').style.display = 'none';
-        const frame = document.getElementById('map-frame');
-        frame.src = url;
-        frame.style.display = 'block';
-    }
-
-    function countChars() {
-        const count = document.getElementById('description').value.trim().length;
-        const el = document.getElementById('char-count');
-        el.textContent = count + ' / minimum 20 characters';
-        el.className = count >= 20 ? 'char-count success' : 'char-count error';
-    }
-
-    function validateComplaintForm() {
-        const violation = document.getElementById('violation_type').value.trim();
-        const street = document.getElementById('street_address').value.trim();
-        const barangay = document.getElementById('barangay').value.trim();
-        const municipality = document.getElementById('municipality').value.trim();
-        const dateVal = document.getElementById('date_incident').value.trim();
-        const descLen = document.getElementById('description').value.trim().length;
-
-        if (!violation) {
-            alert('Please select a violation type.');
-            return false;
-        }
-        if (!street) {
-            alert('Please enter a street address.');
-            return false;
-        }
-        if (!barangay) {
-            alert('Please enter a barangay.');
-            return false;
-        }
-        if (!municipality) {
-            alert('Please enter a municipality.');
-            return false;
-        }
-        if (!dateVal) {
-            alert('Please select the date of incident.');
-            return false;
-        }
-        if (descLen < 20) {
-            alert('Description must be at least 20 characters (you entered ' + descLen + ').');
-            return false;
-        }
-        return true;
-    }
-
-    function previewPhoto() {
-        const file = document.getElementById('photo').files[0];
-        const preview = document.getElementById('photo-preview');
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                preview.src = e.target.result;
-                preview.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-        }
-    }
-
-    function getSpeechRecognition() {
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SR) return null;
-        return new SR();
-    }
-
-    let recognition = null;
-    let listening = false;
-    let finalTranscript = '';
-
-    function setVoiceUIActive(active) {
-        const status = document.getElementById('voice-status');
-        const wave = document.getElementById('wave');
-        const controls = document.getElementById('voice-controls');
-        const micBtn = document.getElementById('mic-btn');
-
-        if (active) {
-            status.style.display = 'block';
-            wave.style.display = 'block';
-            controls.style.display = 'flex';
-            micBtn.disabled = true;
-        } else {
-            status.style.display = 'none';
-            wave.style.display = 'none';
-            controls.style.display = 'none';
-            micBtn.disabled = false;
-        }
-    }
-
-    function appendTranscript(text) {
-        const desc = document.getElementById('description');
-        const current = desc.value || '';
-        const trimmed = (text || '').trim();
-        if (!trimmed) return;
-
-        // Append with a space/newline if needed, but preserve cursor/editing by users.
-        const needsSep = current.length > 0 && !current.endsWith(' ') && !current.endsWith('\n');
-        desc.value = current + (needsSep ? ' ' : '') + trimmed;
-        countChars();
-    }
-
-    function startListening() {
-        if (listening) return;
-        finalTranscript = '';
-
-        recognition = getSpeechRecognition();
-        if (!recognition) {
-            alert('Voice input is not supported in this browser. Please use manual typing.');
-            return;
-        }
-
-        const langSelect = document.getElementById('speech_lang');
-        const lang = langSelect ? langSelect.value : 'en-US';
-
-        recognition.lang = lang;
-        recognition.interimResults = true;
-        recognition.continuous = true;
-
-        recognition.onstart = function() {
-            listening = true;
-            setVoiceUIActive(true);
-        };
-
-        recognition.onerror = function(event) {
-            console.log('SpeechRecognition error:', event);
-            listening = false;
-            setVoiceUIActive(false);
-
-            // If user blocked mic, show a short message.
-            const msg = event && event.error ? event.error : 'unknown';
-            if (msg === 'not-allowed' || msg === 'service-not-allowed') {
-                alert('Microphone permission was not granted. Allow microphone access to use voice input.');
+            if (!barangay || !municipality) {
+                alert('Please enter a Barangay and Municipality to show the map.');
+                return;
             }
-        };
 
-        recognition.onresult = function(event) {
-            let interim = '';
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                const res = event.results[i];
-                const transcript = res[0].transcript;
-                if (res.isFinal) {
-                    finalTranscript += transcript + ' ';
-                } else {
-                    interim += transcript;
+            const query = encodeURIComponent(barangay + ', ' + municipality + ', Philippines');
+            const url = 'https://maps.google.com/maps?q=' + query + '&output=embed';
+
+            document.getElementById('map-placeholder').style.display = 'none';
+            const frame = document.getElementById('map-frame');
+            frame.src = url;
+            frame.style.display = 'block';
+        }
+
+        function countChars() {
+            const count = document.getElementById('description').value.trim().length;
+            const el = document.getElementById('char-count');
+            el.textContent = count + ' / minimum 20 characters';
+            el.className = count >= 20 ? 'char-count success' : 'char-count error';
+        }
+
+        // 🖥️ Intercept step layer workflow execution
+        function triggerConfirmationWorkflow() {
+            const form = document.getElementById('complaint-form');
+            const violation = document.getElementById('violation_type').value;
+            const street = document.getElementById('street_address').value.trim();
+            const barangay = document.getElementById('barangay').value.trim();
+            const municipality = document.getElementById('municipality').value.trim();
+            const dateVal = document.getElementById('date_incident').value.trim();
+            const descLen = document.getElementById('description').value.trim().length;
+
+            // Perform basic input validation
+            if (!violation || !street || !barangay || !municipality || !dateVal || descLen < 20) {
+                form.reportValidity();
+                if (descLen < 20 && violation && street && barangay && municipality && dateVal) {
+                    alert('Description must be at least 20 characters long.');
                 }
+                return;
             }
 
-            // Live update (optional): append only final segments to avoid messing with manual edits.
-            // Interim is shown only via status label.
+            // Map values directly into summary element selectors inside the modal window layout
+            document.getElementById('summary-violation').textContent = violation;
+            document.getElementById('summary-location').textContent = `${barangay}, ${municipality}`;
+
+            // Show confirmation modal dialog layer
+            const confirmationModal = new bootstrap.Modal(document.getElementById('complaintConfirmModal'));
+            confirmationModal.show();
+        }
+
+        function submitFinalComplaintForm() {
+            // Disable submission handler interface to prevent continuous post triggers
+            const processBtn = document.getElementById('confirmSubmitButton');
+            processBtn.disabled = true;
+            processBtn.textContent = "Processing...";
+
+            document.getElementById('complaint-form').submit();
+        }
+
+        function previewPhoto() {
+            const file = document.getElementById('photo').files[0];
+            const preview = document.getElementById('photo-preview');
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function getSpeechRecognition() {
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SR) return null;
+            return new SR();
+        }
+
+        let recognition = null;
+        let listening = false;
+        let finalTranscript = '';
+
+        function setVoiceUIActive(active) {
             const status = document.getElementById('voice-status');
-            if (status && interim.trim().length > 0) {
-                status.textContent = 'Listening...';
-            }
-        };
+            const wave = document.getElementById('wave');
+            const controls = document.getElementById('voice-controls');
+            const micBtn = document.getElementById('mic-btn');
 
-        recognition.onend = function() {
-            // When recognition ends naturally, append final transcript if any.
-            if (finalTranscript.trim().length > 0) {
+            if (active) {
+                status.style.display = 'block';
+                wave.style.display = 'block';
+                controls.style.display = 'flex';
+                micBtn.disabled = true;
+            } else {
+                status.style.display = 'none';
+                wave.style.display = 'none';
+                controls.style.display = 'none';
+                micBtn.disabled = false;
+            }
+        }
+
+        function appendTranscript(text) {
+            const desc = document.getElementById('description');
+            const current = desc.value || '';
+            const trimmed = (text || '').trim();
+            if (!trimmed) return;
+
+            const needsSep = current.length > 0 && !current.endsWith(' ') && !current.endsWith('\n');
+            desc.value = current + (needsSep ? ' ' : '') + trimmed;
+            countChars();
+        }
+
+        function startListening() {
+            if (listening) return;
+            finalTranscript = '';
+
+            recognition = getSpeechRecognition();
+            if (!recognition) {
+                alert('Voice input is not supported in this browser. Please use manual typing.');
+                return;
+            }
+
+            const lang = document.getElementById('speech_lang').value;
+            recognition.lang = lang;
+            recognition.interimResults = true;
+            recognition.continuous = true;
+
+            recognition.onstart = function () {
+                listening = true;
+                setVoiceUIActive(true);
+            };
+
+            recognition.onerror = function (event) {
+                console.log('SpeechRecognition error:', event);
+                listening = false;
+                setVoiceUIActive(false);
+                if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                    alert('Microphone permission was not granted. Allow microphone access to use voice input.');
+                }
+            };
+
+            recognition.onresult = function (event) {
+                let interim = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const res = event.results[i];
+                    const transcript = res[0].transcript;
+                    if (res.isFinal) {
+                        finalTranscript += transcript + ' ';
+                    } else {
+                        interim += transcript;
+                    }
+                }
+                const status = document.getElementById('voice-status');
+                if (status && interim.trim().length > 0) {
+                    status.textContent = 'Listening...';
+                }
+            };
+
+            recognition.onend = function () {
+                if (finalTranscript.trim().length > 0) {
+                    appendTranscript(finalTranscript);
+                }
+                listening = false;
+                setVoiceUIActive(false);
+            };
+
+            recognition.start();
+        }
+
+        function stopListening({ appendNow = true } = {}) {
+            if (!recognition) return;
+            try { recognition.stop(); } catch (e) { }
+
+            if (appendNow && finalTranscript.trim().length > 0) {
                 appendTranscript(finalTranscript);
+                finalTranscript = '';
             }
             listening = false;
             setVoiceUIActive(false);
-        };
-
-        recognition.start();
-    }
-
-    function stopListening({ appendNow = true } = {}) {
-        if (!recognition) return;
-        try {
-            recognition.stop();
-        } catch (e) {
-            // ignore
         }
 
-        if (appendNow && finalTranscript.trim().length > 0) {
-            appendTranscript(finalTranscript);
-            finalTranscript = '';
-        }
+        document.addEventListener('DOMContentLoaded', function () {
+            countChars();
+            if (document.getElementById('barangay').value.trim() && document.getElementById('municipality').value.trim()) {
+                showMap();
+            }
 
-        listening = false;
-        setVoiceUIActive(false);
-    }
-
-
-    document.addEventListener('DOMContentLoaded', function() {
-        countChars();
-        if (document.getElementById('barangay').value.trim() &&
-            document.getElementById('municipality').value.trim()) {
-            showMap();
-        }
-
-        const micBtn = document.getElementById('mic-btn');
-        const stopBtn = document.getElementById('stop-btn');
-        const reRecordBtn = document.getElementById('re-record-btn');
-
-        if (micBtn) {
-            micBtn.addEventListener('click', function() {
-                // Restart listening fresh each time user clicks mic.
+            document.getElementById('mic-btn').addEventListener('click', function () {
                 finalTranscript = '';
                 startListening();
             });
-        }
 
-        if (stopBtn) {
-            stopBtn.addEventListener('click', function() {
+            document.getElementById('stop-btn').addEventListener('click', function () {
                 stopListening({ appendNow: true });
             });
-        }
 
-        if (reRecordBtn) {
-            reRecordBtn.addEventListener('click', function() {
-                // Clear transcription state and restart listening.
+            document.getElementById('re-record-btn').addEventListener('click', function () {
                 finalTranscript = '';
                 stopListening({ appendNow: false });
                 setTimeout(() => startListening(), 150);
             });
-        }
-
-    });
-</script>
+        });
+    </script>
 </body>
-</html>
 
+</html>

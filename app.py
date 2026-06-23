@@ -1,54 +1,11 @@
+import os
 from pathlib import Path
-from flask import Flask, redirect, url_for, render_template
+from flask import Flask, redirect, url_for, request
 from extensions import db, login_manager
 from dotenv import load_dotenv
-import os
 
-
-app = Flask(__name__)
-
-
-from routes.admin_routes import admin_bp
-from routes.user_routes import user_bp
-
-
-app.register_blueprint(admin_bp)
-app.register_blueprint(user_bp)
-
-
+# Load environmental configurations properly before bootstrap initializing
 load_dotenv(Path(__file__).resolve().parent / '.env', override=True)
-
-
-def seed_default_agencies():
-    from models import Agency
-
-    if Agency.query.count() > 0:
-        return
-
-    agencies = [
-        Agency(
-            agency_name='DENR',
-            contact_email='denr@gov.ph',
-            contact_number='09171234567',
-            violation_types='Air Pollution,Illegal Logging',
-        ),
-        Agency(
-            agency_name='LLDA',
-            contact_email='llda@gov.ph',
-            contact_number='09181234567',
-            violation_types='Water Pollution',
-        ),
-        Agency(
-            agency_name='LGU',
-            contact_email='lgu@gov.ph',
-            contact_number='09191234567',
-            violation_types='Illegal Dumping,Others',
-        ),
-    ]
-    for agency in agencies:
-        db.session.add(agency)
-    db.session.commit()
-
 
 def seed_default_agencies():
     from models import Agency
@@ -83,7 +40,6 @@ def seed_default_agencies():
 
 def seed_default_admin():
     from models import AdminUser
-    from werkzeug.security import generate_password_hash
 
     admin_email = os.getenv('ADMIN_EMAIL', 'admin@ingat.com')
     admin_password = os.getenv('ADMIN_PASSWORD', 'Admin@1234')
@@ -91,10 +47,10 @@ def seed_default_admin():
     if AdminUser.query.filter_by(email=admin_email).first():
         return
 
-    db.session.add(AdminUser(
-        email=admin_email,
-        password_hash=generate_password_hash(admin_password),
-    ))
+    admin = AdminUser(email=admin_email)
+    admin.set_password(admin_password) # Fixed to use our updated model hashing helper function
+    
+    db.session.add(admin)
     db.session.commit()
 
 
@@ -104,6 +60,7 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ingat.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+    # Initialize extensions context matching state configurations
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'user.user_login'
@@ -114,15 +71,23 @@ def create_app():
 
         if isinstance(user_id, str) and '-' in user_id:
             role, raw_id = user_id.split('-', 1)
-            if role == 'admin':
-                return AdminUser.query.get(int(raw_id))
-            if role == 'user':
-                return User.query.get(int(raw_id))
+            try:
+                if role == 'admin':
+                    return AdminUser.query.get(int(raw_id))
+                if role == 'user':
+                    return User.query.get(int(raw_id))
+            except ValueError:
+                return None
 
-        user = AdminUser.query.get(int(user_id))
-        if user:
-            return user
-        return User.query.get(int(user_id))
+        # Fallback safe parser if string integer IDs are received directly
+        try:
+            target_id = int(user_id)
+            user = AdminUser.query.get(target_id)
+            if user:
+                return user
+            return User.query.get(target_id)
+        except ValueError:
+            return None
 
     @login_manager.unauthorized_handler
     def unauthorized():
@@ -130,6 +95,7 @@ def create_app():
             return redirect(url_for('admin.admin_login'))
         return redirect(url_for('user.user_login'))
 
+    # Import and register blueprints securely within application workspace factory
     from routes.admin_routes import admin_bp
     from routes.user_routes import user_bp
 
@@ -140,13 +106,11 @@ def create_app():
     def index():
         return redirect(url_for('user.user_login'))
 
+    # Build active connection database tables schemas 
     with app.app_context():
         import models  # noqa: F401
         db.create_all()
-
-
         seed_default_admin()
-
         seed_default_agencies()
 
     return app

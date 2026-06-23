@@ -1,13 +1,10 @@
+from datetime import datetime
 from extensions import db
 from flask_login import UserMixin
-from datetime import datetime
-
+from werkzeug.security import generate_password_hash, check_password_hash
 
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
-
-    def get_id(self):
-        return f'user-{self.id}'
 
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(100), nullable=False)
@@ -20,8 +17,21 @@ class User(db.Model, UserMixin):
     email_notif = db.Column(db.Boolean, default=True)
     inapp_notif = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
     complaints = db.relationship('Complaint', backref='complainant', lazy=True)
     email_verifications = db.relationship('EmailVerification', backref='user', lazy=True)
+
+    # 🛠️ Fixed Password Utilities to integrate with your registration backend route
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    # ⚠️ Note: If your LoginManager user_loader expects an integer string, use "return str(self.id)".
+    def get_id(self):
+        return f'user-{self.id}'
 
 
 class EmailVerification(db.Model):
@@ -38,17 +48,25 @@ class EmailVerification(db.Model):
 class AdminUser(db.Model, UserMixin):
     __tablename__ = 'admin_users'
 
-    def get_id(self):
-        return f'admin-{self.id}'
-
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # 🛠️ Added security hashing helpers to Admin users too
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    def get_id(self):
+        return f'admin-{self.id}'
+
 
 class Agency(db.Model):
     __tablename__ = 'agencies'
+    
     id = db.Column(db.Integer, primary_key=True)
     agency_name = db.Column(db.String(100), nullable=False)
     contact_email = db.Column(db.String(120), nullable=False)
@@ -56,11 +74,14 @@ class Agency(db.Model):
     violation_types = db.Column(db.String(255), nullable=False)
     status = db.Column(db.String(20), default='active')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
     complaints = db.relationship('Complaint', backref='agency', lazy=True)
 
 
 class Complaint(db.Model):
     __tablename__ = 'complaints'
+    
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     agency_id = db.Column(db.Integer, db.ForeignKey('agencies.id'), nullable=True)
@@ -75,11 +96,14 @@ class Complaint(db.Model):
     letter_generated = db.Column(db.Boolean, default=False)
     status = db.Column(db.String(50), default='Submitted')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
     status_history = db.relationship('StatusHistory', backref='complaint', lazy=True)
 
 
 class StatusHistory(db.Model):
     __tablename__ = 'status_history'
+    
     id = db.Column(db.Integer, primary_key=True)
     complaint_id = db.Column(db.Integer, db.ForeignKey('complaints.id'), nullable=False)
     previous_status = db.Column(db.String(50), nullable=True)
