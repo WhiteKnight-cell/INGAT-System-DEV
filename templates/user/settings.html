@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INGAT — Settings</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background-color: #f0f4f0; font-family: 'Segoe UI', sans-serif; }
+        .navbar-ingat { background-color: #2D6A4F; }
+        .card { border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+        .section-title { font-size: 13px; font-weight: 700; color: #2D6A4F; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 2px solid #e8f4ee; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark navbar-ingat px-4 py-2">
+        <span class="navbar-brand fw-bold">🌿 INGAT</span>
+        <div class="d-flex align-items-center gap-2">
+            <div class="dropdown">
+                <a href="#" class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="bi bi-person-circle"></i> {{ current_user.full_name }}
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{{ url_for('user.profile') }}"><i class="bi bi-person"></i> Profile</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('user.settings') }}"><i class="bi bi-gear"></i> Settings</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="{{ url_for('user.user_logout') }}"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container py-4" style="max-width: 700px;">
+        <h4 class="fw-bold mb-1">Settings</h4>
+        <p class="text-muted small mb-4">Configure your account preferences.</p>
+        <div class="card p-4">
+            <div class="section-title">Preferences</div>
+            <p class="text-muted small mb-0">Settings page coming soon.</p>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

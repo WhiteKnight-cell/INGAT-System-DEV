@@ -1,11 +1,13 @@
 # --- Change the top of routes/admin_routes.py to look like this: ---
-from flask import Blueprint, Response, render_template, redirect, url_for, flash, request, send_file, current_app
+import io, csv
+import secrets
+from flask import Blueprint, Response, render_template, redirect, url_for, flash, request, send_file, current_app, session
 from flask_login import login_user, logout_user, current_user
 from datetime import datetime
 
 # Local imports
 from extensions import db
-from models import AdminUser, Complaint, StatusHistory, Agency # <--- 💡 ADD 'Agency' HERE!
+from models import AdminUser, AdminLog, Complaint, StatusHistory, Agency # <--- 💡 ADD 'Agency' HERE!
 from utils import verify_password, send_email
 from routes.auth import admin_required
 
@@ -17,11 +19,25 @@ VIOLATION_TYPES = [
     'Illegal Dumping',
     'Air Pollution',
     'Water Pollution',
+    'Toxic Waste',
+    'Illegal Fishing',
+    'Marine Habitat Destruction',
+    'Poaching',
     'Illegal Logging',
+    'Unauthorized Timber Transport',
+    'Kaingin',
+    'Industrial Water Pollution',
+    'Illegal Reclamation',
     'Others',
 ]
 
 STATUS_OPTIONS = ['Submitted', 'Under Review', 'Forwarded to Agency', 'Resolved']
+
+
+def _log(admin_id, action, details=None):
+    log = AdminLog(admin_id=admin_id, action=action, details=details)
+    db.session.add(log)
+    db.session.commit()
 
 
 @admin_bp.route('/login', methods=['GET', 'POST'])
@@ -43,7 +59,11 @@ def admin_login():
             print(f"DEBUG: Password verification result: {is_valid}")
             
             if is_valid:
+                admin.session_token = secrets.token_hex(32)
+                db.session.commit()
                 login_user(admin)
+                session['_admin_st'] = admin.session_token
+                _log(admin.id, 'Login', 'Admin logged in')
                 return redirect(url_for('admin.dashboard'))
         
         # If we reach here, it failed
@@ -55,7 +75,7 @@ def admin_login():
 
 # Import your model at the top if you haven't already
 from models import Complaint
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from extensions import db
 
 @admin_bp.route('/dashboard')
@@ -176,6 +196,7 @@ def agency_add():
         db.session.add(agency)
         db.session.commit()
 
+        _log(current_user.id, 'Create Agency', f'Created agency "{agency_name}"')
         flash('Agency added successfully.', 'success')
         return redirect(url_for('admin.manage_agencies'))
 
@@ -207,7 +228,6 @@ def agency_edit(id: int):
         contact_email = request.form.get('contact_email', '').strip()
         contact_number = request.form.get('contact_number', '').strip()
         status = request.form.get('status', 'active').strip()
-        violation_types_multi = request.form.getlist('violation_types')
 
         if not agency_name:
             flash('Agency name is required.', 'danger')
@@ -225,24 +245,14 @@ def agency_edit(id: int):
             flash('Contact number must be exactly 11 digits.', 'danger')
             return redirect(url_for('admin.agency_edit', id=id))
 
-        violation_types_multi = violation_types_multi or []
-        invalid = [v for v in violation_types_multi if v not in all_violation_types]
-        if invalid:
-            flash('Invalid violation types selected.', 'danger')
-            return redirect(url_for('admin.agency_edit', id=id))
-
-        violation_types_csv = ','.join(violation_types_multi)
-        if not violation_types_csv:
-            flash('Please select at least one violation type.', 'danger')
-            return redirect(url_for('admin.agency_edit', id=id))
-
+        # Violation types are NOT updated on edit — only set at creation
         agency.agency_name = agency_name
         agency.contact_email = contact_email
         agency.contact_number = contact_number
-        agency.violation_types = violation_types_csv
         agency.status = status
 
         db.session.commit()
+        _log(current_user.id, 'Edit Agency', f'Updated agency "{agency.agency_name}" (ID: {id})')
         flash('Agency updated successfully.', 'success')
         return redirect(url_for('admin.manage_agencies'))
 
@@ -264,7 +274,7 @@ def _filtered_complaints_query():
     search = request.args.get('q', '').strip()
     status_filter = request.args.get('status', '').strip()
     violation_filter = request.args.get('violation_type', '').strip()
-    sort = request.args.get('sort', 'newest').strip()
+    sort = request.args.get('sort', 'oldest').strip()
 
     query = Complaint.query.join(User, Complaint.user_id == User.id)
     if search:
@@ -304,6 +314,7 @@ def delete_agency(agency_id):
             
         db.session.delete(agency)
         db.session.commit()
+        _log(current_user.id, 'Delete Agency', f'Deleted agency "{agency.agency_name}" (ID: {agency_id})')
         flash(f'Agency "{agency.agency_name}" was successfully deleted.', 'success')
         
     except Exception as e:
@@ -323,7 +334,7 @@ def manage_reports():
         search=request.args.get('q', '').strip(),
         status_filter=request.args.get('status', '').strip(),
         violation_filter=request.args.get('violation_type', '').strip(),
-        sort=request.args.get('sort', 'newest').strip(),
+        sort=request.args.get('sort', 'oldest').strip(),
         statuses=STATUS_OPTIONS,
         violation_types=VIOLATION_TYPES,
         pagination=paginated,
@@ -394,6 +405,41 @@ def analytics_report():
         for s in status_order
     ]
 
+    # Monthly complaint volume from actual data
+    monthly_raw = (
+        db.session.query(
+            func.strftime('%Y-%m', Complaint.created_at).label('year_month'),
+            func.count(Complaint.id),
+        )
+        .group_by('year_month')
+        .order_by('year_month')
+        .all()
+    )
+
+    import calendar
+    from datetime import datetime
+
+    monthly_labels = []
+    monthly_values = []
+    if monthly_raw:
+        first = monthly_raw[0][0]
+        last = monthly_raw[-1][0]
+        start = datetime.strptime(first, '%Y-%m')
+        end = datetime.strptime(last, '%Y-%m')
+        counts = {ym: cnt for ym, cnt in monthly_raw}
+        cur = start
+        while cur <= end:
+            ym = cur.strftime('%Y-%m')
+            monthly_labels.append(cur.strftime('%b %Y'))
+            monthly_values.append(counts.get(ym, 0))
+            if cur.month == 12:
+                cur = cur.replace(year=cur.year + 1, month=1)
+            else:
+                cur = cur.replace(month=cur.month + 1)
+    else:
+        monthly_labels = []
+        monthly_values = []
+
     return render_template(
         'admin/analytics_reports.html',
         status_rows=status_rows,
@@ -404,6 +450,8 @@ def analytics_report():
         barangay_filter=request.args.get('barangay', ''),
         date_from=request.args.get('date_from', ''),
         date_to=request.args.get('date_to', ''),
+        monthly_labels=monthly_labels,
+        monthly_values=monthly_values,
     )
 
 
@@ -444,7 +492,7 @@ def manage_users():
 
     # For "Total Reports": compute via Complaint aggregation
     # We'll fetch users first then compute totals via grouped complaint query for efficiency.
-    users = query.order_by(User.created_at.desc()).all()
+    users = query.order_by(User.created_at.asc()).all()
 
     user_ids = [u.id for u in users]
     totals_by_user = {}
@@ -481,6 +529,7 @@ def suspend_user(user_id: int):
     user = User.query.get_or_404(user_id)
     user.status = 'suspended'
     db.session.commit()
+    _log(current_user.id, 'Suspend User', f'Suspended user "{user.full_name}" (ID: {user_id})')
     flash('User suspended successfully.', 'success')
     return redirect(url_for('admin.manage_users'))
 
@@ -494,6 +543,7 @@ def reactivate_user(user_id: int):
     user = User.query.get_or_404(user_id)
     user.status = 'active'
     db.session.commit()
+    _log(current_user.id, 'Reactivate User', f'Reactivated user "{user.full_name}" (ID: {user_id})')
     flash('User reactivated successfully.', 'success')
     return redirect(url_for('admin.manage_users'))
 
@@ -664,13 +714,13 @@ def update_status(complaint_id):
         complaint.status = new_status
         db.session.add(sh)
         db.session.commit()
+        _log(current_user.id, 'Update Complaint Status',
+             f'Complaint #{complaint.id} -> "{new_status}" (agency_id: {agency_id or "none"})')
         flash('Status updated successfully.', 'success')
         
     except Exception as e:
         db.session.rollback()
         flash('An error occurred while updating.', 'danger')
-
-    return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
 
     # 4. Email Notification
     try:
@@ -686,6 +736,63 @@ def update_status(complaint_id):
     return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
 
 
+
+@admin_bp.route('/logs')
+@admin_required
+def logs():
+    page = request.args.get('page', 1, type=int)
+    per_page = 50
+    pagination = AdminLog.query.order_by(AdminLog.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    return render_template('admin/logs.html', logs=pagination.items, pagination=pagination)
+
+
+@admin_bp.route('/profile')
+@admin_required
+def profile():
+    return render_template('admin/profile.html')
+
+
+@admin_bp.route('/settings', methods=['GET', 'POST'])
+@admin_required
+def settings():
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'change_password':
+            current_password = request.form.get('current_password', '')
+            new_password = request.form.get('new_password', '')
+            confirm_password = request.form.get('confirm_password', '')
+
+            if not current_user.check_password(current_password):
+                flash('Current password is incorrect.', 'danger')
+            elif not new_password or len(new_password) < 8:
+                flash('New password must be at least 8 characters.', 'danger')
+            elif new_password != confirm_password:
+                flash('New passwords do not match.', 'danger')
+            else:
+                current_user.set_password(new_password)
+                db.session.commit()
+                _log(current_user.id, 'Change Password', 'Admin changed their password')
+                flash('Password changed successfully.', 'success')
+
+        elif action == 'update_notifications':
+            current_user.email_notif = request.form.get('email_notif') == '1'
+            current_user.inapp_notif = request.form.get('inapp_notif') == '1'
+            db.session.commit()
+            _log(current_user.id, 'Update Notification Preferences',
+                 f'Email: {current_user.email_notif}, In-App: {current_user.inapp_notif}')
+            flash('Notification preferences updated.', 'success')
+
+        elif action == 'logout_all':
+            current_user.session_token = secrets.token_hex(32)
+            db.session.commit()
+            session['_admin_st'] = current_user.session_token
+            _log(current_user.id, 'Logout All Devices', 'Admin logged out all other sessions')
+            flash('All other sessions have been logged out.', 'success')
+
+        return redirect(url_for('admin.settings'))
+
+    return render_template('admin/settings.html')
 
 
 @admin_bp.route('/logout')

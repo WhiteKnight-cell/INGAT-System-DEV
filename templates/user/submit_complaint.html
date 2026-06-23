@@ -140,11 +140,20 @@
     <nav class="navbar navbar-dark navbar-ingat px-4 py-2">
         <span class="navbar-brand fw-bold">🌿 INGAT</span>
         <div class="d-flex align-items-center gap-2">
-            <span class="text-white small d-none d-md-inline">{{ current_user.full_name }}</span>
             <a href="{{ url_for('user.my_reports') }}" class="btn btn-outline-light btn-sm">
                 <i class="bi bi-list-ul"></i> My Reports
             </a>
-            <a href="{{ url_for('user.user_logout') }}" class="btn btn-outline-light btn-sm">Logout</a>
+            <div class="dropdown">
+                <a href="#" class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-light text-dark fw-bold" style="width:26px;height:26px;font-size:13px;flex-shrink:0;">{{ current_user.full_name[0]|upper }}</span> {{ current_user.full_name }}
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{{ url_for('user.profile') }}"><i class="bi bi-person"></i> Profile</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('user.settings') }}"><i class="bi bi-gear"></i> Settings</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="{{ url_for('user.user_logout') }}"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                </ul>
+            </div>
         </div>
     </nav>
 
@@ -172,16 +181,35 @@
                 <div class="mb-3">
                     <label class="form-label small fw-semibold">Violation Type <span
                             class="text-danger">*</span></label>
-                    <select name="violation_type" id="violation_type" class="form-select" required>
-                        <option value="" disabled {% if not f.get('violation_type') %}selected{% endif %}>
-                            Select violation type
-                        </option>
+
+                    <!-- Selected tags container -->
+                    <div id="selected-types-container" class="d-flex flex-wrap gap-1 mb-2 p-2 border rounded bg-light"
+                        style="min-height:36px; display:none;">
+                    </div>
+
+                    <div class="border rounded p-3 bg-white" style="max-height:260px; overflow-y:auto;">
+                        {% set selected_types = f.get('violation_type', '').split(',') if f.get('violation_type') else [] %}
                         {% for vt in ['Illegal Dumping', 'Air Pollution', 'Water Pollution', 'Illegal Logging',
-                        'Others'] %}
-                        <option value="{{ vt }}" {% if f.get('violation_type')==vt %}selected{% endif %}>{{ vt }}
-                        </option>
+                        'Toxic Waste', 'Illegal Fishing', 'Marine Habitat Destruction', 'Poaching',
+                        'Unauthorized Timber Transport', 'Kaingin', 'Industrial Water Pollution',
+                        'Illegal Reclamation', 'Others'] %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="violation_type" value="{{ vt }}"
+                                id="vt_{{ loop.index }}"
+                                onchange="toggleCustomViolation(); updateSelectedTypes();"
+                                {% if vt in selected_types %}checked{% endif %}>
+                            <label class="form-check-label small" for="vt_{{ loop.index }}">{{ vt }}</label>
+                        </div>
                         {% endfor %}
-                    </select>
+                    </div>
+
+                    <div class="mt-2" id="custom_violation_wrapper" style="display:none;">
+                        <label class="form-label small fw-semibold">Specify Violation Type <span
+                                class="text-danger">*</span></label>
+                        <input type="text" name="custom_violation_type" id="custom_violation_type" class="form-control"
+                            placeholder="Enter the violation type"
+                            value="{{ f.get('custom_violation_type', '') }}">
+                    </div>
                     <div class="form-text">The complaint will be automatically routed to the correct agency.</div>
                 </div>
             </div>
@@ -325,6 +353,47 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        function toggleCustomViolation() {
+            const othersCb = document.querySelector('input[name="violation_type"][value="Others"]');
+            const wrapper = document.getElementById('custom_violation_wrapper');
+            const input = document.getElementById('custom_violation_type');
+            if (othersCb && othersCb.checked) {
+                wrapper.style.display = 'block';
+            } else {
+                wrapper.style.display = 'none';
+                input.required = false;
+                input.value = '';
+            }
+        }
+
+        function updateSelectedTypes() {
+            const container = document.getElementById('selected-types-container');
+            const checked = document.querySelectorAll('input[name="violation_type"]:checked');
+            container.innerHTML = '';
+            if (checked.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+            container.style.display = 'flex';
+            checked.forEach(cb => {
+                if (cb.value === 'Others') return;
+                const tag = document.createElement('span');
+                tag.className = 'badge bg-success rounded-pill px-3 py-2 small';
+                tag.textContent = cb.value;
+                container.appendChild(tag);
+            });
+            const othersCb = document.querySelector('input[name="violation_type"][value="Others"]');
+            if (othersCb && othersCb.checked) {
+                const customVal = document.getElementById('custom_violation_type').value.trim();
+                const tag = document.createElement('span');
+                tag.className = 'badge bg-secondary rounded-pill px-3 py-2 small';
+                tag.textContent = customVal || 'Others (specify)';
+                container.appendChild(tag);
+            }
+        }
+
+        document.getElementById('custom_violation_type').addEventListener('input', updateSelectedTypes);
+
         document.getElementById('date_incident').max = new Date().toISOString().split('T')[0];
 
         function showMap() {
@@ -355,12 +424,25 @@
         // 🖥️ Intercept step layer workflow execution
         function triggerConfirmationWorkflow() {
             const form = document.getElementById('complaint-form');
-            const violation = document.getElementById('violation_type').value;
+            const checked = document.querySelectorAll('input[name="violation_type"]:checked');
             const street = document.getElementById('street_address').value.trim();
             const barangay = document.getElementById('barangay').value.trim();
             const municipality = document.getElementById('municipality').value.trim();
             const dateVal = document.getElementById('date_incident').value.trim();
             const descLen = document.getElementById('description').value.trim().length;
+
+            let types = [];
+            let hasOthers = false;
+            checked.forEach(cb => {
+                if (cb.value === 'Others') hasOthers = true;
+                else types.push(cb.value);
+            });
+            if (hasOthers) {
+                const customVal = document.getElementById('custom_violation_type').value.trim();
+                if (customVal) types.push(customVal);
+                else types.push('Others');
+            }
+            const violation = types.join(', ');
 
             // Perform basic input validation
             if (!violation || !street || !barangay || !municipality || !dateVal || descLen < 20) {

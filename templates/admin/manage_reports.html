@@ -47,10 +47,22 @@
         <a href="{{ url_for('admin.analytics_report') }}" class="sidebar-item">
             <i class="bi bi-bar-chart"></i> Analytics
         </a>
-    <div class="sidebar-label">Account</div>
-    <a href="{{ url_for('admin.logout') }}" class="sidebar-item">
-        <i class="bi bi-box-arrow-right"></i> Logout
-    </a>
+        <a href="{{ url_for('admin.logs') }}" class="sidebar-item">
+            <i class="bi bi-journal-text"></i> System Logs
+        </a>
+    <div style="position:absolute;bottom:0;left:0;right:0;padding:12px 20px;border-top:1px solid rgba(255,255,255,.1);">
+      <div class="dropdown">
+        <a href="#" class="sidebar-item dropdown-toggle" data-bs-toggle="dropdown" style="padding:8px 0;">
+          <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-white text-dark fw-bold" style="width:26px;height:26px;font-size:13px;flex-shrink:0;">{{ current_user.email[0]|upper }}</span> {{ current_user.email }}
+        </a>
+        <ul class="dropdown-menu dropdown-menu-dark ms-0" style="background-color:#1A3C2E;width:100%;">
+          <li><a class="dropdown-item" href="{{ url_for('admin.profile') }}"><i class="bi bi-person"></i> Profile</a></li>
+          <li><a class="dropdown-item" href="{{ url_for('admin.settings') }}"><i class="bi bi-gear"></i> Settings</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="{{ url_for('admin.logout') }}"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+        </ul>
+      </div>
+    </div>
 </div>
 
 <div class="main-content">

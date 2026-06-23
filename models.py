@@ -1,3 +1,4 @@
+import secrets
 from datetime import datetime
 from extensions import db
 from flask_login import UserMixin
@@ -51,6 +52,9 @@ class AdminUser(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
+    email_notif = db.Column(db.Boolean, default=True)
+    inapp_notif = db.Column(db.Boolean, default=True)
+    session_token = db.Column(db.String(64), default=lambda: secrets.token_hex(32))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # 🛠️ Added security hashing helpers to Admin users too
@@ -62,6 +66,18 @@ class AdminUser(db.Model, UserMixin):
 
     def get_id(self):
         return f'admin-{self.id}'
+
+
+class AdminLog(db.Model):
+    __tablename__ = 'admin_logs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    admin_id = db.Column(db.Integer, db.ForeignKey('admin_users.id'), nullable=True)
+    action = db.Column(db.String(255), nullable=False)
+    details = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    admin = db.relationship('AdminUser', backref='logs', lazy=True)
 
 
 class Agency(db.Model):

@@ -179,28 +179,19 @@ def generate_complaint_letter(complaint, complainant, agency):
 
     def _call_api():
         try:
-            from google import genai as _  # noqa: F401
+            from google import genai as _
             return _call_gemini_new_sdk(api_key, prompt)
         except ImportError:
             return _call_gemini_legacy_sdk(api_key, prompt)
 
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-flash')
-
-    def _call_api():
-        return model.generate_content(prompt)
-
     with ThreadPoolExecutor(max_workers=1) as executor:
         future = executor.submit(_call_api)
         try:
-            return future.result(timeout=GEMINI_TIMEOUT_SECONDS)
-        except FuturesTimeoutError as exc:
-            raise TimeoutError('Gemini API request timed out') from exc
             response = future.result(timeout=GEMINI_TIMEOUT_SECONDS)
         except FuturesTimeoutError as exc:
             raise TimeoutError('Gemini API request timed out') from exc
 
-    if not response or not response.text:
+    if not response:
         raise ValueError('Gemini returned an empty response')
 
-    return response.text.strip()
+    return response.strip()

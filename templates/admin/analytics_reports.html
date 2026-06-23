@@ -191,13 +191,24 @@
     <a href="{{ url_for('admin.analytics_report') }}" class="sidebar-item active">
       <i class="bi bi-bar-chart"></i> Analytics
     </a>
-
-    <div class="sidebar-label">Account</div>
-    <a href="{{ url_for('admin.logout') }}" class="sidebar-item">
-      <i class="bi bi-box-arrow-right"></i> Logout
+    <a href="{{ url_for('admin.logs') }}" class="sidebar-item">
+      <i class="bi bi-journal-text"></i> System Logs
     </a>
-  </div>
 
+    <div style="position:absolute;bottom:0;left:0;right:0;padding:12px 20px;border-top:1px solid rgba(255,255,255,.1);">
+      <div class="dropdown">
+        <a href="#" class="sidebar-item dropdown-toggle" data-bs-toggle="dropdown" style="padding:8px 0;">
+          <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-white text-dark fw-bold" style="width:26px;height:26px;font-size:13px;flex-shrink:0;">{{ current_user.email[0]|upper }}</span> {{ current_user.email }}
+        </a>
+        <ul class="dropdown-menu dropdown-menu-dark ms-0" style="background-color:#1A3C2E;width:100%;">
+          <li><a class="dropdown-item" href="{{ url_for('admin.profile') }}"><i class="bi bi-person"></i> Profile</a></li>
+          <li><a class="dropdown-item" href="{{ url_for('admin.settings') }}"><i class="bi bi-gear"></i> Settings</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="{{ url_for('admin.logout') }}"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
   <div class="main-content">
     <div class="d-flex justify-content-between align-items-center mb-4 gap-3">
       <div>
@@ -271,8 +282,8 @@
     </div>
 
     <!-- Charts -->
-    <div class="row g-4 mt-1">
-      <div class="col-lg-4">
+    <div class="row g-4 mt-1 justify-content-center">
+      <div class="col-lg-5">
         <div class="section-card">
           <div class="section-title">Top 5 Violation Types</div>
           <div class="chart-wrap">
@@ -281,16 +292,7 @@
         </div>
       </div>
 
-      <div class="col-lg-4">
-        <div class="section-card">
-          <div class="section-title">Top 5 Barangays</div>
-          <div class="chart-wrap">
-            <canvas id="topBarangayChart" class="chart-canvas"></canvas>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-lg-4">
+      <div class="col-lg-5">
         <div class="section-card">
           <div class="section-title">Monthly Complaint Volume Trend</div>
           <div class="chart-wrap">
@@ -368,13 +370,6 @@
     const demo = {
       violationLabels: ['Illegal Dumping','Air Pollution','Water Pollution','Illegal Logging','Others'],
       violationValues: [34, 28, 22, 17, 9],
-
-      barangayLabels: ['Barangay A','Barangay B','Barangay C','Barangay D','Barangay E'],
-      barangayValues: [25, 20, 16, 12, 9],
-
-      monthlyLabels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-      monthlyValues: [4,6,5,9,8,7,10,12,9,6,5,7],
-
       statusData: {
         'Submitted': 42,
         'Under Review': 28,
@@ -382,6 +377,10 @@
         'Resolved': 31
       }
     };
+
+    // Monthly data from backend
+    const monthlyLabels = {{ monthly_labels | tojson }};
+    const monthlyValues = {{ monthly_values | tojson }};
 
     const commonOptions = {
       responsive: true,
@@ -419,39 +418,16 @@
       }
     );
 
-    // Top barangays (bar)
-    const topBarangayChart = new Chart(
-      document.getElementById('topBarangayChart'),
-      {
-        type: 'bar',
-        data: {
-          labels: demo.barangayLabels,
-          datasets: [{
-            data: demo.barangayValues,
-            backgroundColor: ['#2D6A4F','#198754','#0D6EFD','#FFC107','#6c757d'],
-            borderRadius: 10
-          }]
-        },
-        options: {
-          ...commonOptions,
-          scales: {
-            x: { grid: { display: false } },
-            y: { beginAtZero: true, ticks: { precision: 0 } }
-          }
-        }
-      }
-    );
-
     // Monthly trend (line)
     const monthlyTrendChart = new Chart(
       document.getElementById('monthlyTrendChart'),
       {
         type: 'line',
         data: {
-          labels: demo.monthlyLabels,
+          labels: monthlyLabels.length ? monthlyLabels : demo.monthlyLabels,
           datasets: [{
             label: 'Complaints',
-            data: demo.monthlyValues,
+            data: monthlyValues.length ? monthlyValues : demo.monthlyValues,
             borderColor: palette.primary,
             backgroundColor: 'rgba(45,106,79,.15)',
             tension: 0.35,
@@ -478,25 +454,17 @@
     // Initialize status table with demo
     updateStatusTable(demo.statusData);
 
-    // Apply filters (demo behavior)
+    // Apply filters — reload page with query params
     document.getElementById('applyFiltersBtn').addEventListener('click', () => {
-      // You can wire these inputs to a backend endpoint that returns chart + table data.
-      // For now, we just re-render with the same demo data.
-      topViolationChart.update();
-      topBarangayChart.update();
-      monthlyTrendChart.update();
-      updateStatusTable(demo.statusData);
+      const form = document.getElementById('filtersForm');
+      const params = new URLSearchParams();
+      const fd = new FormData(form);
+      for (const [k, v] of fd) { if (v) params.set(k, v); }
+      window.location.search = params.toString();
     });
 
     document.getElementById('resetFiltersBtn').addEventListener('click', () => {
-      document.getElementById('dateFrom').value = '';
-      document.getElementById('dateTo').value = '';
-      document.getElementById('violationType').value = '';
-      document.getElementById('barangay').value = '';
-      topViolationChart.update();
-      topBarangayChart.update();
-      monthlyTrendChart.update();
-      updateStatusTable(demo.statusData);
+      window.location.search = '';
     });
 
     function exportExcel(e) {

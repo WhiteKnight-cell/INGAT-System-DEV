@@ -15,22 +15,28 @@ def seed_default_agencies():
 
     agencies = [
         Agency(
-            agency_name='DENR',
-            contact_email='denr@gov.ph',
-            contact_number='09171234567',
-            violation_types='Air Pollution,Illegal Logging',
+            agency_name='DENR-EMB',
+            contact_email='records@emb.gov.ph',
+            contact_number='0289202246',
+            violation_types='Illegal Dumping,Air Pollution,Water Pollution,Toxic Waste',
+        ),
+        Agency(
+            agency_name='BFAR',
+            contact_email='info@bfar.da.gov.ph',
+            contact_number='0289298074',
+            violation_types='Illegal Fishing,Marine Habitat Destruction,Poaching',
+        ),
+        Agency(
+            agency_name='DENR-FMB',
+            contact_email='fmb@denr.gov.ph',
+            contact_number='0289274788',
+            violation_types='Illegal Logging,Unauthorized Timber Transport,Kaingin',
         ),
         Agency(
             agency_name='LLDA',
-            contact_email='llda@gov.ph',
-            contact_number='09181234567',
-            violation_types='Water Pollution',
-        ),
-        Agency(
-            agency_name='LGU',
-            contact_email='lgu@gov.ph',
-            contact_number='09191234567',
-            violation_types='Illegal Dumping,Others',
+            contact_email='info@llda.gov.ph',
+            contact_number='0283764039',
+            violation_types='Industrial Water Pollution,Illegal Reclamation',
         ),
     ]
     for agency in agencies:
@@ -51,6 +57,32 @@ def seed_default_admin():
     admin.set_password(admin_password) # Fixed to use our updated model hashing helper function
     
     db.session.add(admin)
+    db.session.commit()
+
+
+def _migrate_admin_columns():
+    from sqlalchemy import inspect as sa_inspect
+    from models import AdminUser
+
+    inspector = sa_inspect(db.engine)
+    columns = [c['name'] for c in inspector.get_columns('admin_users')]
+    additions = []
+
+    if 'email_notif' not in columns:
+        additions.append('ALTER TABLE admin_users ADD COLUMN email_notif BOOLEAN DEFAULT 1')
+    if 'inapp_notif' not in columns:
+        additions.append('ALTER TABLE admin_users ADD COLUMN inapp_notif BOOLEAN DEFAULT 1')
+    if 'session_token' not in columns:
+        additions.append('ALTER TABLE admin_users ADD COLUMN session_token VARCHAR(64) DEFAULT NULL')
+
+    for stmt in additions:
+        db.session.execute(db.text(stmt))
+
+    # Seed session_token for existing admins that have NULL
+    db.session.execute(
+        db.text("UPDATE admin_users SET session_token = :token WHERE session_token IS NULL"),
+        {'token': __import__('secrets').token_hex(32)}
+    )
     db.session.commit()
 
 
@@ -110,6 +142,7 @@ def create_app():
     with app.app_context():
         import models  # noqa: F401
         db.create_all()
+        _migrate_admin_columns()
         seed_default_admin()
         seed_default_agencies()
 
