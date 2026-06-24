@@ -151,7 +151,7 @@
                     <li><a class="dropdown-item" href="{{ url_for('user.profile') }}"><i class="bi bi-person"></i> Profile</a></li>
                     <li><a class="dropdown-item" href="{{ url_for('user.settings') }}"><i class="bi bi-gear"></i> Settings</a></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="{{ url_for('user.user_logout') }}"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="event.preventDefault();showLogoutModal();return false;" data-logout="{{ url_for('user.user_logout') }}"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
                 </ul>
             </div>
         </div>
@@ -615,6 +615,33 @@
             });
         });
     </script>
+
+<div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-body text-center py-4">
+                <div class="text-warning mb-2" style="font-size: 34px;">
+                    <i class="bi bi-question-circle-fill"></i>
+                </div>
+                <h6 class="fw-bold text-dark mb-1">Confirm Logout</h6>
+                <p class="text-muted small mb-4">Are you sure you want to log out?</p>
+                <div class="d-flex gap-2 justify-content-center">
+                    <button type="button" class="btn btn-light btn-sm px-3 text-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger btn-sm px-3 fw-semibold" onclick="confirmLogout()">Logout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+function showLogoutModal() {
+    new bootstrap.Modal(document.getElementById('logoutConfirmModal')).show();
+}
+function confirmLogout() {
+    var el = document.querySelector('[data-logout]');
+    if (el) window.location.href = el.getAttribute('data-logout');
+}
+</script>
 </body>
 
 </html>
