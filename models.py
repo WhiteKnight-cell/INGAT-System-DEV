@@ -24,14 +24,14 @@ class User(db.Model, UserMixin):
     complaints = db.relationship('Complaint', backref='complainant', lazy=True)
     email_verifications = db.relationship('EmailVerification', backref='user', lazy=True)
 
-    # 🛠️ Fixed Password Utilities to integrate with your registration backend route
+    # Fixed Password Utilities to integrate with your registration backend route
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-    # ⚠️ Note: If your LoginManager user_loader expects an integer string, use "return str(self.id)".
+    # Note: If your LoginManager user_loader expects an integer string, use "return str(self.id)".
     def get_id(self):
         return f'user-{self.id}'
 
