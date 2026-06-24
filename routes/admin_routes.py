@@ -494,12 +494,24 @@ def report_detail(complaint_id):
     status_options = flow.get(complaint.status, [])
     
     status_history = StatusHistory.query.filter_by(complaint_id=complaint.id).order_by(StatusHistory.updated_at.asc()).all()
+
+    # Build a URL-safe photo path (Windows uses backslashes from os.path.join)
+    complaint_photo_url = None
+    complaint_photo_filename = None
+    if complaint.photo_path:
+        path = complaint.photo_path.replace('\\', '/')
+        complaint_photo_filename = path.rsplit('/', 1)[-1]
+        if path.startswith('static/'):
+            path = path[len('static/'):]
+        complaint_photo_url = url_for('static', filename=path)
     
     return render_template('admin/report_detail.html', 
                            complaint=complaint, 
                            agencies=agencies,
                            status_options=status_options,
-                           status_history=status_history)
+                           status_history=status_history,
+                           complaint_photo_url=complaint_photo_url,
+                           complaint_photo_filename=complaint_photo_filename)
 
 
 

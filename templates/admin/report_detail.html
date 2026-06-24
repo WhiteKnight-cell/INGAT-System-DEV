@@ -281,11 +281,12 @@
               <div class="fw-semibold break-word">{{ complaint.street_address }}</div>
             </div>
 
-            {% if complaint.photo_path %}
+            {% if complaint.photo_path and complaint_photo_url %}
             <div class="col-12">
               <div class="muted-small mb-1">Photo</div>
-              <img src="{{ url_for('static', filename=complaint.photo_path.replace('static/','')) }}"
-                alt="Complaint photo" class="img-fluid rounded">
+              <a href="#" data-bs-toggle="modal" data-bs-target="#photoModal">
+                <i class="bi bi-image"></i> {{ complaint_photo_filename }}
+              </a>
             </div>
             {% endif %}
           </div>
@@ -449,6 +450,19 @@
             <button type="button" class="btn btn-success btn-sm px-3 fw-semibold" onclick="executeFinalSubmit()">Confirm
               & Save</button>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="photoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content border-0">
+        <div class="modal-body p-0 text-center">
+          <img src="{{ complaint_photo_url }}" alt="Complaint photo" class="img-fluid rounded">
+        </div>
+        <div class="modal-footer border-0 justify-content-center">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>

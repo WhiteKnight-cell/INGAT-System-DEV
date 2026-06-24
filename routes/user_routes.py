@@ -845,11 +845,17 @@ def report_detail(complaint_id):
         key=lambda entry: entry.updated_at,
         reverse=True,
     )
+    photo_url = _complaint_photo_url(complaint)
+    photo_filename = None
+    if complaint.photo_path:
+        photo_filename = complaint.photo_path.replace('\\', '/').rsplit('/', 1)[-1]
+
     return render_template(
         'user/report_detail.html',
         complaint=complaint,
         status_history=status_history,
-        photo_url=_complaint_photo_url(complaint),
+        photo_url=photo_url,
+        photo_filename=photo_filename,
     )
 
 
