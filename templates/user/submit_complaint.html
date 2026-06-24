@@ -137,9 +137,12 @@
 
     {% set f = form or {} %}
 
-    <nav class="navbar navbar-dark navbar-ingat px-4 py-2">
+    <nav class="navbar navbar-dark navbar-ingat px-4 py-2 sticky-top">
         <span class="navbar-brand fw-bold">🌿 INGAT</span>
         <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('user.submit_complaint') }}" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-plus-circle"></i> Submit Complaint
+            </a>
             <a href="{{ url_for('user.my_reports') }}" class="btn btn-outline-light btn-sm">
                 <i class="bi bi-list-ul"></i> My Reports
             </a>
@@ -265,8 +268,8 @@
                         <div class="d-flex align-items-center gap-2">
                             <select id="speech_lang" class="form-select form-select-sm" style="width:auto;"
                                 aria-label="Language">
-                                <option value="en-US" selected>English</option>
-                                <option value="fil-PH">Filipino</option>
+                                <option value="en-US" {% if current_user.default_lang == 'en-US' %}selected{% endif %}>English</option>
+                                <option value="fil-PH" {% if current_user.default_lang == 'fil-PH' %}selected{% endif %}>Filipino</option>
                             </select>
                             <button type="button" id="mic-btn" class="btn btn-outline-primary btn-sm"
                                 title="Voice input">

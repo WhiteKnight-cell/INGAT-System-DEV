@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from datetime import timedelta
 from flask import Flask, redirect, url_for, request
 from extensions import db, login_manager
 from dotenv import load_dotenv
@@ -60,6 +61,22 @@ def seed_default_admin():
     db.session.commit()
 
 
+def _migrate_user_columns():
+    from sqlalchemy import inspect as sa_inspect
+    from models import User
+
+    inspector = sa_inspect(db.engine)
+    columns = [c['name'] for c in inspector.get_columns('users')]
+    additions = []
+
+    if 'default_lang' not in columns:
+        additions.append("ALTER TABLE users ADD COLUMN default_lang VARCHAR(10) DEFAULT 'en-US'")
+
+    for stmt in additions:
+        db.session.execute(db.text(stmt))
+    db.session.commit()
+
+
 def _migrate_admin_columns():
     from sqlalchemy import inspect as sa_inspect
     from models import AdminUser
@@ -91,6 +108,7 @@ def create_app():
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'ingat-secret-key-2026')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ingat.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=3)
 
     # Initialize extensions context matching state configurations
     db.init_app(app)
@@ -143,6 +161,7 @@ def create_app():
         import models  # noqa: F401
         db.create_all()
         _migrate_admin_columns()
+        _migrate_user_columns()
         seed_default_admin()
         seed_default_agencies()
 

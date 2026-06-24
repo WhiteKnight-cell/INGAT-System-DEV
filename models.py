@@ -17,6 +17,7 @@ class User(db.Model, UserMixin):
     status = db.Column(db.String(20), default='active')
     email_notif = db.Column(db.Boolean, default=True)
     inapp_notif = db.Column(db.Boolean, default=True)
+    default_lang = db.Column(db.String(10), default='en-US')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships

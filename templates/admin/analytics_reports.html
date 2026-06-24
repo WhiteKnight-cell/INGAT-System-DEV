@@ -226,61 +226,6 @@
       </div>
     </div>
 
-    <!-- Filters -->
-    <div class="section-card">
-      <div class="section-title">Interactive Filters</div>
-
-      <form id="filtersForm" class="row g-3 align-items-end" onsubmit="return false;">
-        <div class="col-md-3">
-          <div class="filter-label">Date Range (From)</div>
-          <input type="date" class="form-control" id="dateFrom" name="date_from" value="{{ date_from if date_from else '' }}">
-        </div>
-
-        <div class="col-md-3">
-          <div class="filter-label">Date Range (To)</div>
-          <input type="date" class="form-control" id="dateTo" name="date_to" value="{{ date_to if date_to else '' }}">
-        </div>
-
-        <div class="col-md-3">
-          <div class="filter-label">Violation Type</div>
-          <select class="form-select" id="violationType" name="violation_type">
-            <option value="">All</option>
-            {% if violation_types %}
-              {% for vt in violation_types %}
-                <option value="{{ vt }}" {% if violation_type==vt %}selected{% endif %}>{{ vt }}</option>
-              {% endfor %}
-            {% endif %}
-          </select>
-        </div>
-
-        <div class="col-md-3">
-          <div class="filter-label">Barangay</div>
-          <select class="form-select" id="barangay" name="barangay">
-            <option value="">All</option>
-            {% if barangays %}
-              {% for b in barangays %}
-                <option value="{{ b }}" {% if barangay_filter==b %}selected{% endif %}>{{ b }}</option>
-              {% endfor %}
-            {% endif %}
-          </select>
-        </div>
-
-        <div class="col-12 d-flex gap-2 flex-wrap">
-          <button type="button" class="btn btn-ingat" id="applyFiltersBtn">
-            <i class="bi bi-funnel"></i> Apply Filters
-          </button>
-
-          <button type="button" class="btn btn-outline-ingat" id="resetFiltersBtn">
-            <i class="bi bi-arrow-counterclockwise"></i> Reset
-          </button>
-
-          <div class="ms-auto muted-small d-flex align-items-center">
-            <i class="bi bi-lightning-charge me-2" style="color:#2D6A4F;"></i> Charts update instantly (demo data)
-          </div>
-        </div>
-      </form>
-    </div>
-
     <!-- Charts -->
     <div class="row g-4 mt-1 justify-content-center">
       <div class="col-lg-5">
@@ -335,7 +280,7 @@
         </table>
       </div>
 
-      <div class="muted-small mt-2">Note: If you don’t wire the backend endpoints yet, the charts use demo data.</div>
+      <div class="muted-small mt-2">Status counts reflect current data in the system.</div>
     </div>
   </div>
 
@@ -350,35 +295,9 @@
       gray: '#6c757d'
     };
 
-    function updateStatusTable(statusData) {
-      const total = Object.values(statusData).reduce((a,b)=>a+b,0) || 1;
-      const pct = (v) => Math.round((v/total)*100);
-      document.getElementById('stSubmitted').textContent = statusData['Submitted'] ?? 0;
-      document.getElementById('stSubmittedPct').textContent = pct(statusData['Submitted'] ?? 0);
-
-      document.getElementById('stUnderReview').textContent = statusData['Under Review'] ?? 0;
-      document.getElementById('stUnderReviewPct').textContent = pct(statusData['Under Review'] ?? 0);
-
-      document.getElementById('stForwarded').textContent = statusData['Forwarded to Agency'] ?? 0;
-      document.getElementById('stForwardedPct').textContent = pct(statusData['Forwarded to Agency'] ?? 0);
-
-      document.getElementById('stResolved').textContent = statusData['Resolved'] ?? 0;
-      document.getElementById('stResolvedPct').textContent = pct(statusData['Resolved'] ?? 0);
-    }
-
-    // Demo data (replace with backend-provided data)
-    const demo = {
-      violationLabels: ['Illegal Dumping','Air Pollution','Water Pollution','Illegal Logging','Others'],
-      violationValues: [34, 28, 22, 17, 9],
-      statusData: {
-        'Submitted': 42,
-        'Under Review': 28,
-        'Forwarded to Agency': 19,
-        'Resolved': 31
-      }
-    };
-
-    // Monthly data from backend
+    // Data from backend
+    const violationLabels = {{ violation_labels | tojson }};
+    const violationValues = {{ violation_values | tojson }};
     const monthlyLabels = {{ monthly_labels | tojson }};
     const monthlyValues = {{ monthly_values | tojson }};
 
@@ -401,9 +320,9 @@
       {
         type: 'bar',
         data: {
-          labels: demo.violationLabels,
+          labels: violationLabels,
           datasets: [{
-            data: demo.violationValues,
+            data: violationValues,
             backgroundColor: ['#2D6A4F','#0D6EFD','#FFC107','#198754','#6c757d'],
             borderRadius: 10
           }]
@@ -424,10 +343,10 @@
       {
         type: 'line',
         data: {
-          labels: monthlyLabels.length ? monthlyLabels : demo.monthlyLabels,
+          labels: monthlyLabels.length ? monthlyLabels : [],
           datasets: [{
             label: 'Complaints',
-            data: monthlyValues.length ? monthlyValues : demo.monthlyValues,
+            data: monthlyValues.length ? monthlyValues : [],
             borderColor: palette.primary,
             backgroundColor: 'rgba(45,106,79,.15)',
             tension: 0.35,
@@ -451,31 +370,8 @@
       }
     );
 
-    // Initialize status table with demo
-    updateStatusTable(demo.statusData);
 
-    // Apply filters — reload page with query params
-    document.getElementById('applyFiltersBtn').addEventListener('click', () => {
-      const form = document.getElementById('filtersForm');
-      const params = new URLSearchParams();
-      const fd = new FormData(form);
-      for (const [k, v] of fd) { if (v) params.set(k, v); }
-      window.location.search = params.toString();
-    });
 
-    document.getElementById('resetFiltersBtn').addEventListener('click', () => {
-      window.location.search = '';
-    });
-
-    function exportExcel(e) {
-      e.preventDefault();
-      alert('Export to Excel is not wired to backend yet.');
-    }
-
-    function exportPDF(e) {
-      e.preventDefault();
-      alert('Export to PDF is not wired to backend yet.');
-    }
   </script>
 </body>
 </html>

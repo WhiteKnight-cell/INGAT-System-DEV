@@ -78,13 +78,13 @@
     </div>
 
     <div class="section-card mb-3">
-        <form method="GET" action="{{ url_for('admin.manage_reports') }}" class="row g-2 align-items-end">
-            <div class="col-md-3">
+        <form method="GET" action="{{ url_for('admin.manage_reports') }}" class="row g-3 align-items-end">
+            <div class="col">
                 <label class="form-label small fw-semibold mb-1">Search</label>
                 <input type="text" name="q" class="form-control form-control-sm" value="{{ search }}"
-                       placeholder="Name, location, ING-0001">
+                       placeholder="Name, location">
             </div>
-            <div class="col-md-2">
+            <div class="col">
                 <label class="form-label small fw-semibold mb-1">Status</label>
                 <select name="status" class="form-select form-select-sm">
                     <option value="">All statuses</option>
@@ -93,7 +93,7 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col">
                 <label class="form-label small fw-semibold mb-1">Violation Type</label>
                 <select name="violation_type" class="form-select form-select-sm">
                     <option value="">All types</option>
@@ -102,23 +102,38 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-2">
-                <label class="form-label small fw-semibold mb-1">Sort</label>
-                <select name="sort" class="form-select form-select-sm">
-                    <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest</option>
-                    <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Oldest</option>
-                    <option value="status" {% if sort == 'status' %}selected{% endif %}>Status</option>
+            <div class="col">
+                <label class="form-label small fw-semibold mb-1">Barangay</label>
+                <select name="barangay" class="form-select form-select-sm">
+                    <option value="">All barangays</option>
+                    {% for b in barangays %}
+                    <option value="{{ b }}" {% if barangay_filter == b %}selected{% endif %}>{{ b }}</option>
+                    {% endfor %}
                 </select>
             </div>
-            <div class="col-md-2 d-flex gap-2">
-                <button type="submit" class="btn btn-ingat btn-sm flex-grow-1">Apply</button>
+            <div class="col">
+                <label class="form-label small fw-semibold mb-1">Date From</label>
+                <input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from }}">
+            </div>
+            <div class="col">
+                <label class="form-label small fw-semibold mb-1">Date To</label>
+                <input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to }}">
+            </div>
+            <div class="col">
+                <label class="form-label small fw-semibold mb-1">Sort</label>
+                <select name="sort" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest</option>
+                    <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Oldest</option>
+                </select>
+            </div>
+            <div class="col-12 d-flex gap-2">
+                <button type="submit" class="btn btn-ingat btn-sm px-3">Apply</button>
                 <a href="{{ url_for('admin.manage_reports') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
             </div>
         </form>
     </div>
 
     <div class="section-card p-0 overflow-hidden">
-        {% if complaints %}
         <div class="table-responsive">
             <table class="table table-hover mb-0 align-middle">
                 <thead class="bg-light">
@@ -133,8 +148,9 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {% if complaints %}
                     {% for c in complaints %}
-<tr>
+                    <tr>
                         <td class="fw-semibold">{{ c.id }}</td>
                         <td>{{ c.complainant.full_name }}</td>
                         <td>{{ c.violation_type }}</td>
@@ -161,15 +177,16 @@
                         </td>
                     </tr>
                     {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted small">
+                            <i class="bi bi-inbox me-1"></i> No complaints match the current filters.
+                        </td>
+                    </tr>
+                    {% endif %}
                 </tbody>
             </table>
         </div>
-        {% else %}
-        <div class="text-center py-5 text-muted">
-            <i class="bi bi-inbox" style="font-size: 34px;"></i>
-            <p class="small mt-2 mb-0">No complaints match the current filters.</p>
-        </div>
-        {% endif %}
     </div>
     {% if pagination.pages > 1 %}
     <nav aria-label="Report pagination" class="mt-3">

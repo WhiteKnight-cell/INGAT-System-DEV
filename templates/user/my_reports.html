@@ -24,11 +24,14 @@
     </style>
 </head>
 <body>
-<nav class="navbar navbar-dark navbar-ingat px-4 py-2">
+<nav class="navbar navbar-dark navbar-ingat px-4 py-2 sticky-top">
     <span class="navbar-brand fw-bold">🌿 INGAT</span>
     <div class="d-flex align-items-center gap-2">
         <a href="{{ url_for('user.submit_complaint') }}" class="btn btn-outline-light btn-sm">
-            <i class="bi bi-plus-circle"></i> Submit New Complaint
+            <i class="bi bi-plus-circle"></i> Submit Complaint
+        </a>
+        <a href="{{ url_for('user.my_reports') }}" class="btn btn-outline-light btn-sm">
+            <i class="bi bi-list-ul"></i> My Reports
         </a>
         <div class="dropdown">
             <a href="#" class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
@@ -65,7 +68,7 @@
             <div class="col-md-3">
                 <label class="form-label small fw-semibold mb-1">Search ID</label>
                 <input type="text" name="q" class="form-control form-control-sm"
-                       value="{{ search }}" placeholder="ING-0001">
+                       value="{{ search }}" placeholder="1, 2, 3...">
             </div>
             <div class="col-md-3">
                 <label class="form-label small fw-semibold mb-1">Violation Type</label>
@@ -109,7 +112,7 @@
                 <tbody>
                     {% for c in complaints %}
                     <tr class="report-row" onclick="window.location='{{ url_for('user.report_detail', complaint_id=c.id) }}'">
-                        <td class="fw-semibold">ING-{{ '%04d' % c.id }}</td>
+                        <td class="fw-semibold">{{ c.id }}</td>
                         <td>{{ c.violation_type }}</td>
                         <td>{{ c.barangay }}</td>
                         <td>{{ c.created_at.strftime('%b %d, %Y') }}</td>

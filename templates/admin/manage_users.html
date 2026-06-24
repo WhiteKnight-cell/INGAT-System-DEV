@@ -74,18 +74,18 @@
             <h4 class="fw-bold mb-0">Manage Users</h4>
             <small class="text-muted">Search users, filter by status, suspend/reactivate, and export CSV.</small>
         </div>
-        <a href="{{ url_for('admin.export_users_csv', q=search, status=status_filter) }}" class="btn btn-outline-success btn-sm">
+        <a href="{{ url_for('admin.export_users_csv', q=search, status=status_filter, violation_type=violation_filter, barangay=barangay_filter, date_from=date_from, date_to=date_to) }}" class="btn btn-outline-success btn-sm">
             <i class="bi bi-download"></i> Export CSV
         </a>
     </div>
 
     <div class="section-card mb-3">
-        <form method="GET" action="{{ url_for('admin.manage_users') }}" class="row g-2 align-items-end">
-            <div class="col-md-7">
+        <form method="GET" action="{{ url_for('admin.manage_users') }}" class="row g-3 align-items-end">
+            <div class="col-md-2">
                 <label class="form-label small fw-semibold mb-1">Search</label>
                 <input type="text" name="q" class="form-control form-control-sm" value="{{ search or '' }}" placeholder="Name or email">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label small fw-semibold mb-1">Status</label>
                 <select name="status" class="form-select form-select-sm">
                     <option value="">All statuses</option>
@@ -94,15 +94,40 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-2 d-flex gap-2">
-                <button type="submit" class="btn btn-ingat btn-sm flex-grow-1">Apply</button>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold mb-1">Violation Type</label>
+                <select name="violation_type" class="form-select form-select-sm">
+                    <option value="">All types</option>
+                    {% for vt in violation_types %}
+                    <option value="{{ vt }}" {% if violation_filter == vt %}selected{% endif %}>{{ vt }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold mb-1">Barangay</label>
+                <select name="barangay" class="form-select form-select-sm">
+                    <option value="">All barangays</option>
+                    {% for b in barangays %}
+                    <option value="{{ b }}" {% if barangay_filter == b %}selected{% endif %}>{{ b }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold mb-1">Date From</label>
+                <input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold mb-1">Date To</label>
+                <input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to }}">
+            </div>
+            <div class="col-12 d-flex gap-2">
+                <button type="submit" class="btn btn-ingat btn-sm px-3">Apply</button>
                 <a href="{{ url_for('admin.manage_users') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
             </div>
         </form>
     </div>
 
     <div class="section-card p-0 overflow-hidden">
-        {% if users %}
         <div class="table-responsive">
             <table class="table table-hover mb-0 align-middle">
                 <thead class="bg-light">
@@ -110,6 +135,7 @@
                     <th>ID</th>
                     <th>Name</th>
                     <th>Email</th>
+                    <th>Barangay</th>
                     <th>Date Registered</th>
                     <th>Total Reports</th>
                     <th>Status</th>
@@ -117,11 +143,13 @@
                 </tr>
                 </thead>
                 <tbody>
+                {% if users %}
                 {% for u in users %}
                 <tr>
                     <td class="fw-semibold">{{ u.id }}</td>
                     <td class="truncate" title="{{ u.full_name }}">{{ u.full_name }}</td>
                     <td class="truncate" title="{{ u.email }}">{{ u.email }}</td>
+                    <td>{{ u.barangay }}</td>
                     <td>{{ u.created_at.strftime('%b %d, %Y') if u.created_at else '-' }}</td>
                     <td class="fw-semibold">{{ u.total_reports }}</td>
                     <td>
@@ -154,15 +182,16 @@
                     </td>
                 </tr>
                 {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center py-4 text-muted small">
+                        <i class="bi bi-inbox me-1"></i> No users match the current filters.
+                    </td>
+                </tr>
+                {% endif %}
                 </tbody>
             </table>
         </div>
-        {% else %}
-        <div class="text-center py-5 text-muted">
-            <i class="bi bi-inbox" style="font-size: 34px;"></i>
-            <p class="small mt-2 mb-0">No users match the current filters.</p>
-        </div>
-        {% endif %}
     </div>
 </div>
 

@@ -34,6 +34,7 @@ def member_required(fn):
         from models import AdminUser, User
 
         if isinstance(current_user, AdminUser):
+            flash('You are logged in as an admin. Log out first to access user pages.', 'warning')
             return redirect(url_for('admin.dashboard'))
         if not isinstance(current_user, User):
             flash('Please log in to continue.', 'danger')

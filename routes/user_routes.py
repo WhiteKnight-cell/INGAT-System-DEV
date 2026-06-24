@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, send_file
+from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, send_file, session
 from utils import hash_password, verify_password, is_bcrypt_hash
 from flask_login import login_user, logout_user, current_user
 from datetime import datetime, timedelta
@@ -311,7 +311,13 @@ def user_login():
             flash('Your account has been suspended. Please contact the administrator.', 'danger')
             return render_template('user/login.html')
 
+        if user.status == 'deleted':
+            flash('This account has been deleted.', 'danger')
+            return render_template('user/login.html')
+
+        logout_user()
         login_user(user)
+        session.permanent = True
         return redirect(url_for('user.submit_complaint'))
 
     return render_template('user/login.html')
@@ -323,16 +329,74 @@ def profile():
     return render_template('user/profile.html')
 
 
-@user_bp.route('/settings')
+@user_bp.route('/settings', methods=['GET', 'POST'])
 @member_required
 def settings():
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'change_password':
+            current_pw = request.form.get('current_password', '')
+            new_pw = request.form.get('new_password', '')
+            confirm_pw = request.form.get('confirm_password', '')
+
+            if not current_user.check_password(current_pw):
+                flash('Current password is incorrect.', 'danger')
+            elif not new_pw or len(new_pw) < 8:
+                flash('New password must be at least 8 characters.', 'danger')
+            elif new_pw != confirm_pw:
+                flash('New passwords do not match.', 'danger')
+            else:
+                current_user.set_password(new_pw)
+                db.session.commit()
+                flash('Password changed successfully.', 'success')
+
+        elif action == 'update_notifications':
+            current_user.email_notif = request.form.get('email_notif') == '1'
+            current_user.inapp_notif = request.form.get('inapp_notif') == '1'
+            db.session.commit()
+            flash('Notification preferences updated.', 'success')
+
+        elif action == 'update_profile':
+            full_name = request.form.get('full_name', '').strip()
+            contact_number = request.form.get('contact_number', '').strip()
+            barangay = request.form.get('barangay', '').strip()
+            municipality = request.form.get('municipality', '').strip()
+            if full_name:
+                current_user.full_name = full_name
+            if contact_number:
+                current_user.contact_number = contact_number
+            if barangay:
+                current_user.barangay = barangay
+            if municipality:
+                current_user.municipality = municipality
+            db.session.commit()
+            flash('Profile updated successfully.', 'success')
+
+        elif action == 'update_language':
+            lang = request.form.get('default_lang', 'en-US')
+            current_user.default_lang = lang
+            db.session.commit()
+            flash('Default language updated.', 'success')
+
+        elif action == 'delete_account':
+            confirm_pw = request.form.get('confirm_password', '')
+            if not current_user.check_password(confirm_pw):
+                flash('Password is incorrect. Account not deleted.', 'danger')
+            else:
+                current_user.status = 'deleted'
+                db.session.commit()
+                logout_user()
+                flash('Your account has been deleted.', 'info')
+                return redirect(url_for('user.user_login'))
+
+        return redirect(url_for('user.settings'))
+
     return render_template('user/settings.html')
 
 
 @user_bp.route('/logout')
 @member_required
-
-# ── User Logout ──
 def user_logout():
     logout_user()
     return redirect(url_for('user.user_login'))

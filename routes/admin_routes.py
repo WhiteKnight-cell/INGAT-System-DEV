@@ -61,7 +61,9 @@ def admin_login():
             if is_valid:
                 admin.session_token = secrets.token_hex(32)
                 db.session.commit()
+                logout_user()
                 login_user(admin)
+                session.permanent = True
                 session['_admin_st'] = admin.session_token
                 _log(admin.id, 'Login', 'Admin logged in')
                 return redirect(url_for('admin.dashboard'))
@@ -252,7 +254,7 @@ def agency_edit(id: int):
         agency.status = status
 
         db.session.commit()
-        _log(current_user.id, 'Edit Agency', f'Updated agency "{agency.agency_name}" (ID: {id})')
+        _log(current_user.id, 'Edit Agency', f'Updated agency "{agency.agency_name}"')
         flash('Agency updated successfully.', 'success')
         return redirect(url_for('admin.manage_agencies'))
 
@@ -274,6 +276,9 @@ def _filtered_complaints_query():
     search = request.args.get('q', '').strip()
     status_filter = request.args.get('status', '').strip()
     violation_filter = request.args.get('violation_type', '').strip()
+    barangay_filter = request.args.get('barangay', '').strip()
+    date_from = request.args.get('date_from', '').strip()
+    date_to = request.args.get('date_to', '').strip()
     sort = request.args.get('sort', 'oldest').strip()
 
     query = Complaint.query.join(User, Complaint.user_id == User.id)
@@ -292,11 +297,15 @@ def _filtered_complaints_query():
         query = query.filter(Complaint.status == status_filter)
     if violation_filter:
         query = query.filter(Complaint.violation_type == violation_filter)
+    if barangay_filter:
+        query = query.filter(Complaint.barangay == barangay_filter)
+    if date_from:
+        query = query.filter(Complaint.created_at >= date_from)
+    if date_to:
+        query = query.filter(Complaint.created_at <= date_to + ' 23:59:59')
 
     if sort == 'oldest':
         query = query.order_by(Complaint.created_at.asc())
-    elif sort == 'status':
-        query = query.order_by(Complaint.status.asc(), Complaint.created_at.desc())
     else:
         query = query.order_by(Complaint.created_at.desc())
 
@@ -314,7 +323,7 @@ def delete_agency(agency_id):
             
         db.session.delete(agency)
         db.session.commit()
-        _log(current_user.id, 'Delete Agency', f'Deleted agency "{agency.agency_name}" (ID: {agency_id})')
+        _log(current_user.id, 'Delete Agency', f'Deleted agency "{agency.agency_name}"')
         flash(f'Agency "{agency.agency_name}" was successfully deleted.', 'success')
         
     except Exception as e:
@@ -326,17 +335,27 @@ def delete_agency(agency_id):
 @admin_bp.route('/reports')
 @admin_required
 def manage_reports():
+    from models import Complaint
+
     page = request.args.get('page', 1, type=int)
     paginated = _filtered_complaints_query().paginate(page=page, per_page=10, error_out=False)
+
+    # Gather distinct barangays from complaints for filter dropdown
+    barangays = sorted({c.barangay for c in Complaint.query.with_entities(Complaint.barangay).distinct() if c.barangay})
+
     return render_template(
         'admin/manage_reports.html',
         complaints=paginated.items,
         search=request.args.get('q', '').strip(),
         status_filter=request.args.get('status', '').strip(),
         violation_filter=request.args.get('violation_type', '').strip(),
+        barangay_filter=request.args.get('barangay', '').strip(),
+        date_from=request.args.get('date_from', '').strip(),
+        date_to=request.args.get('date_to', '').strip(),
         sort=request.args.get('sort', 'oldest').strip(),
         statuses=STATUS_OPTIONS,
         violation_types=VIOLATION_TYPES,
+        barangays=barangays,
         pagination=paginated,
     )
 
@@ -377,13 +396,8 @@ def export_reports_csv():
 @admin_bp.route('/analytics')
 @admin_required
 def analytics_report():
-    # Basic page render (extend later with real aggregation + Chart.js data endpoints)
     from models import Complaint
     from sqlalchemy import func
-
-    # Populate optional dropdowns
-    violation_types = sorted({c.violation_type for c in Complaint.query.all()})
-    barangays = sorted({c.barangay for c in Complaint.query.all() if c.barangay})
 
     # Status breakdown (simple counts)
     status_counts = (
@@ -440,18 +454,25 @@ def analytics_report():
         monthly_labels = []
         monthly_values = []
 
+    # Top 5 violation types from actual data
+    top_violations = (
+        db.session.query(Complaint.violation_type, func.count(Complaint.id))
+        .group_by(Complaint.violation_type)
+        .order_by(func.count(Complaint.id).desc())
+        .limit(5)
+        .all()
+    )
+    violation_labels = [v[0] for v in top_violations]
+    violation_values = [v[1] for v in top_violations]
+
     return render_template(
         'admin/analytics_reports.html',
         status_rows=status_rows,
         status_order=status_order,
-        violation_types=violation_types,
-        barangays=barangays,
-        violation_type=request.args.get('violation_type', ''),
-        barangay_filter=request.args.get('barangay', ''),
-        date_from=request.args.get('date_from', ''),
-        date_to=request.args.get('date_to', ''),
         monthly_labels=monthly_labels,
         monthly_values=monthly_values,
+        violation_labels=violation_labels,
+        violation_values=violation_values,
     )
 
 
@@ -463,9 +484,22 @@ def report_detail(complaint_id):
     # Fetch all active agencies from your Agency database table
     agencies = Agency.query.filter_by(status='active').all()
     
+    # Status flow for dropdown — only show the next valid status
+    flow = {
+        'Submitted': ['Under Review'],
+        'Under Review': ['Forwarded to Agency'],
+        'Forwarded to Agency': ['Resolved'],
+        'Resolved': [],
+    }
+    status_options = flow.get(complaint.status, [])
+    
+    status_history = StatusHistory.query.filter_by(complaint_id=complaint.id).order_by(StatusHistory.updated_at.asc()).all()
+    
     return render_template('admin/report_detail.html', 
                            complaint=complaint, 
-                           agencies=agencies) # Pass the list here
+                           agencies=agencies,
+                           status_options=status_options,
+                           status_history=status_history)
 
 
 
@@ -479,8 +513,12 @@ def manage_users():
 
     q = (request.args.get('q') or '').strip()
     status_filter = (request.args.get('status') or '').strip()
+    violation_filter = (request.args.get('violation_type') or '').strip()
+    barangay_filter = (request.args.get('barangay') or '').strip()
+    date_from = (request.args.get('date_from') or '').strip()
+    date_to = (request.args.get('date_to') or '').strip()
 
-    # Base query
+    # Base query — users who have submitted at least one complaint
     query = User.query
 
     if q:
@@ -490,8 +528,21 @@ def manage_users():
     if status_filter:
         query = query.filter(User.status == status_filter)
 
-    # For "Total Reports": compute via Complaint aggregation
-    # We'll fetch users first then compute totals via grouped complaint query for efficiency.
+    if barangay_filter:
+        query = query.filter(User.barangay == barangay_filter)
+
+    if violation_filter or date_from or date_to:
+        # Sub-filter users via their complaints
+        cq = db.session.query(Complaint.user_id)
+        if violation_filter:
+            cq = cq.filter(Complaint.violation_type == violation_filter)
+        if date_from:
+            cq = cq.filter(Complaint.created_at >= date_from)
+        if date_to:
+            cq = cq.filter(Complaint.created_at <= date_to + ' 23:59:59')
+        matching_user_ids = {r[0] for r in cq.distinct().all()}
+        query = query.filter(User.id.in_(matching_user_ids)) if matching_user_ids else query.filter(False)
+
     users = query.order_by(User.created_at.asc()).all()
 
     user_ids = [u.id for u in users]
@@ -505,18 +556,26 @@ def manage_users():
         )
         totals_by_user = {uid: total for uid, total in totals}
 
-    # Attach total_reports to each user object for template convenience
     for u in users:
         u.total_reports = totals_by_user.get(u.id, 0)
 
     statuses = ['active', 'suspended']
+
+    # Gather distinct barangays and violation types from users/complaints for filter dropdowns
+    user_barangays = sorted({u.barangay for u in User.query.with_entities(User.barangay).distinct() if u.barangay})
 
     return render_template(
         'admin/manage_users.html',
         users=users,
         search=q,
         status_filter=status_filter,
+        violation_filter=violation_filter,
+        barangay_filter=barangay_filter,
+        date_from=date_from,
+        date_to=date_to,
         statuses=statuses,
+        violation_types=VIOLATION_TYPES,
+        barangays=user_barangays,
     )
 
 
@@ -529,7 +588,7 @@ def suspend_user(user_id: int):
     user = User.query.get_or_404(user_id)
     user.status = 'suspended'
     db.session.commit()
-    _log(current_user.id, 'Suspend User', f'Suspended user "{user.full_name}" (ID: {user_id})')
+    _log(current_user.id, 'Suspend User', f'Suspended user "{user.full_name}"')
     flash('User suspended successfully.', 'success')
     return redirect(url_for('admin.manage_users'))
 
@@ -543,7 +602,7 @@ def reactivate_user(user_id: int):
     user = User.query.get_or_404(user_id)
     user.status = 'active'
     db.session.commit()
-    _log(current_user.id, 'Reactivate User', f'Reactivated user "{user.full_name}" (ID: {user_id})')
+    _log(current_user.id, 'Reactivate User', f'Reactivated user "{user.full_name}"')
     flash('User reactivated successfully.', 'success')
     return redirect(url_for('admin.manage_users'))
 
@@ -692,10 +751,15 @@ def update_status(complaint_id):
     new_status = request.form.get('new_status', '').strip()
     remarks = request.form.get('remarks', '').strip()
     
-    # READ THE SELECTED AGENCY ID FROM STEP 2
     agency_id = request.form.get('agency_id')
     
-    # ... keep your existing validations here ...
+    if not _can_transition(complaint.status, new_status):
+        flash(f'Invalid status transition: {complaint.status} → {new_status}', 'danger')
+        return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
+    
+    if not remarks:
+        flash('Remarks are required.', 'danger')
+        return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
 
     try:
         sh = StatusHistory(
@@ -707,7 +771,6 @@ def update_status(complaint_id):
             updated_at=datetime.utcnow()
         )
         
-        # LINK THE AGENCY TO THE COMPLAINT IF PROVIDED
         if agency_id:
             complaint.agency_id = int(agency_id)
             
@@ -715,14 +778,13 @@ def update_status(complaint_id):
         db.session.add(sh)
         db.session.commit()
         _log(current_user.id, 'Update Complaint Status',
-             f'Complaint #{complaint.id} -> "{new_status}" (agency_id: {agency_id or "none"})')
-        flash('Status updated successfully.', 'success')
+             f'Complaint status changed to "{new_status}"')
         
     except Exception as e:
         db.session.rollback()
         flash('An error occurred while updating.', 'danger')
+        return redirect(url_for('admin.report_detail', complaint_id=complaint_id))
 
-    # 4. Email Notification
     try:
         complainant = complaint.complainant
         if complainant and complainant.email:

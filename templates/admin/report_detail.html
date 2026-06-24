@@ -297,8 +297,7 @@
               {{ complaint.barangay }}, {{ complaint.municipality }}</strong></p>
           {% set map_query = complaint.barangay ~ ',' ~ complaint.municipality %}
           <iframe class="map-frame" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"
-            src="https://www.google.com/maps?q={{ map_query|urlencode }}&output=embed">
-            </footer>
+            src="https://www.google.com/maps?q={{ map_query|urlencode }}&output=embed"></iframe>
         </div>
 
         <div class="section-card">
@@ -330,10 +329,12 @@
         <div class="section-card">
           <div class="section-title d-flex align-items-center justify-content-between gap-2">
             <span>Status</span>
+            {% if status_options %}
             <button class="btn btn-ingat btn-sm" type="button" data-bs-toggle="modal"
               data-bs-target="#updateStatusModal">
               <i class="bi bi-pencil-square"></i> Update
             </button>
+            {% endif %}
           </div>
 
           <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">

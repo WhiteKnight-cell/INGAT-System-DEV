@@ -14,9 +14,15 @@
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-dark navbar-ingat px-4 py-2">
+    <nav class="navbar navbar-dark navbar-ingat px-4 py-2 sticky-top">
         <span class="navbar-brand fw-bold">🌿 INGAT</span>
         <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('user.submit_complaint') }}" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-plus-circle"></i> Submit Complaint
+            </a>
+            <a href="{{ url_for('user.my_reports') }}" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-list-ul"></i> My Reports
+            </a>
             <div class="dropdown">
                 <a href="#" class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
                     <i class="bi bi-person-circle"></i> {{ current_user.full_name }}
