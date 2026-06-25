@@ -353,7 +353,6 @@ def settings():
 
         elif action == 'update_notifications':
             current_user.email_notif = request.form.get('email_notif') == '1'
-            current_user.inapp_notif = request.form.get('inapp_notif') == '1'
             db.session.commit()
             flash('Notification preferences updated.', 'success')
 

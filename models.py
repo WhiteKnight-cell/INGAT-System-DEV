@@ -16,7 +16,6 @@ class User(db.Model, UserMixin):
     password_hash = db.Column(db.String(256), nullable=False)
     status = db.Column(db.String(20), default='active')
     email_notif = db.Column(db.Boolean, default=True)
-    inapp_notif = db.Column(db.Boolean, default=True)
     default_lang = db.Column(db.String(10), default='en-US')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -54,7 +53,6 @@ class AdminUser(db.Model, UserMixin):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     email_notif = db.Column(db.Boolean, default=True)
-    inapp_notif = db.Column(db.Boolean, default=True)
     session_token = db.Column(db.String(64), default=lambda: secrets.token_hex(32))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

@@ -148,7 +148,6 @@ def upsert_users():
             password_hash = hash_password(u["password"]),
             status=u["status"],
             email_notif=True,
-            inapp_notif=True,
             created_at=datetime.utcnow(),
         )
         db.session.add(user)

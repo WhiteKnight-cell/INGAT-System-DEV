@@ -113,9 +113,7 @@
                 <label class="form-check-label small" for="email_notif">Email notifications when complaint status changes</label>
             </div>
             <div class="form-check form-switch mb-3">
-                <input class="form-check-input" type="checkbox" role="switch" id="inapp_notif" name="inapp_notif" value="1"
-                    {% if current_user.inapp_notif %}checked{% endif %}>
-                <label class="form-check-label small" for="inapp_notif">In-app notifications</label>
+
             </div>
             <button type="submit" name="action" value="update_notifications" class="btn btn-ingat btn-sm">
                 <i class="bi bi-check2"></i> Save Preferences

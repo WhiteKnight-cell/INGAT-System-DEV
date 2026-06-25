@@ -851,10 +851,9 @@ def settings():
 
         elif action == 'update_notifications':
             current_user.email_notif = request.form.get('email_notif') == '1'
-            current_user.inapp_notif = request.form.get('inapp_notif') == '1'
             db.session.commit()
             _log(current_user.id, 'Update Notification Preferences',
-                 f'Email: {current_user.email_notif}, In-App: {current_user.inapp_notif}')
+                 f'Email: {current_user.email_notif}')
             flash('Notification preferences updated.', 'success')
 
         elif action == 'logout_all':

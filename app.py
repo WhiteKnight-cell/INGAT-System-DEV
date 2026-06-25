@@ -87,8 +87,6 @@ def _migrate_admin_columns():
 
     if 'email_notif' not in columns:
         additions.append('ALTER TABLE admin_users ADD COLUMN email_notif BOOLEAN DEFAULT 1')
-    if 'inapp_notif' not in columns:
-        additions.append('ALTER TABLE admin_users ADD COLUMN inapp_notif BOOLEAN DEFAULT 1')
     if 'session_token' not in columns:
         additions.append('ALTER TABLE admin_users ADD COLUMN session_token VARCHAR(64) DEFAULT NULL')
 
